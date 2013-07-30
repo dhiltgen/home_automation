@@ -1,0 +1,54 @@
+{% extends "home_automation_base.html" %}
+{% block nav %}
+    <ul class="nav nav-tabs">
+        <li><a href="/">Overview</a></li>
+        <li><a href="/circuits/">Sprinklers</a></li>
+        <li class="active"><a href="outside">Outside Temp/Humidity</a></li>
+        <li><a href="cellar">Cellar Temp/Humidity</a></li>
+        <li><a href="rain">Rainfall</a></li>
+    </ul>
+{% endblock %}
+
+{% block body %}
+    <p/>
+    <ul class="nav nav-tabs">
+        <li {% if active_link == "current" %} class="active" {% endif %}>
+            <a href="/outside">Current Readings</a></li>
+        <li {% if active_link == "24" %} class="active" {% endif %}>
+            <a href="/outside/detail/{{day_ago_datetime|urlencode}}_24">Last 24 hours</a></li>
+        <li {% if active_link == "48" %} class="active" {% endif %}>
+            <a href="/outside/detail/{{two_days_ago_datetime|urlencode}}_48">Last 48 hours</a></li>
+        <li {% if active_link == "week" %} class="active" {% endif %}>
+            <a href="/outside/summary/{{week_ago_datetime|urlencode}}_week">Last Week</a></li>
+        <li {% if active_link == "ytd" %} class="active" {% endif %}>
+            <a href="/outside/summary/{{year_start_datetime|urlencode}}_ytd">Year to date</a></li>
+    </ul>
+
+    <script type="text/javascript">
+      function drawVisualization() {
+        // Create and populate the data table.
+        var data = google.visualization.arrayToDataTable([
+          ['x',  'Lows', 'Highs'],
+
+    {% for reading in readings %}
+        ["{{ reading.when }}", {{ reading.minimum }}, {{ reading.maximum }}],
+    {% endfor %}
+        ]);
+
+        // Create and draw the visualization.
+        new google.visualization.LineChart(document.getElementById('temp')).
+            draw(data, {curveType: "function",
+                        width: 800, height: 500,
+                        title: "Outside Temp",
+                        vAxis: {minValue: 40}}
+                );
+      }
+      google.setOnLoadCallback(drawVisualization);
+    </script>
+    <div class="row">
+        <div id="temp" class="col-md-12"></div>
+    </div>
+
+{% endblock %}
+
+

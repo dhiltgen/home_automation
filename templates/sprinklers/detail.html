@@ -1,0 +1,58 @@
+{% extends "home_automation_base.html" %}
+{% block nav %}
+    <ul class="nav nav-tabs">
+        <li><a href="/">Overview</a></li>
+        <li class="active"><a href="/circuits/">Sprinklers</a></li>
+        <li><a href="/outside">Outside Temp/Humidity</a></li>
+        <li><a href="/cellar">Cellar Temp/Humidity</a></li>
+        <li><a href="/rain">Rainfall</a></li>
+    </ul>
+{% endblock %}
+
+{% block body %}
+
+<h1>{{ circuit.label }}</h1>
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+<hr>
+<table class="table table-striped table-condensed">
+<caption>Current Circuit Status</caption>
+<tr>
+    <th>Last Watering</th>
+    <th>Last Duration</th>
+    <th>Current State</th>
+    <th>Disabled</th>
+    <th>Next scheduled run</th>
+    <th>Water usage</th>
+</tr>
+<tr>
+    <td>{{ circuit.last_watered }}</td>
+    <td>{{ circuit.last_duration }}</td>
+    <td>
+        {% if circuit.current_state %} WATERING {% else %} OFF {% endif %}
+    </td>
+    <td>
+        {% if circuit.disabled %} DISABLED {% else %} ENABLED {% endif %}
+    </td>
+    <td>{{ circuit.next_scheduled_run }}</td>
+    <td>{{ circuit.cfh }} CFH</td>
+</tr>
+</table>
+<p/>
+<hr>
+<p/>
+<form action="/circuits/{{ circuit.id }}/update/" method="post">
+
+{% csrf_token %}
+{% if circuit.current_state %}
+    <input type="hidden" name="action" value="stop"/>
+    <input type="submit" value="Stop" />
+{% else %}
+    <input type="hidden" name="action" value="start"/>
+    Desired Duration: <input type="text" name="duration"> (Leave blank to manually stop later)<br>
+<input type="submit" value="Start Circuit" />
+{% endif %}
+</form>
+
+{% endblock %}

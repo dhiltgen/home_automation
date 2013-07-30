@@ -1,0 +1,128 @@
+{% extends "home_automation_base.html" %}
+{% block nav %}
+    <ul class="nav nav-tabs">
+        <li><a href="/">Overview</a></li>
+        <li><a href="/circuits/">Sprinklers</a></li>
+        <li class="active"><a href="outside">Outside Temp/Humidity</a></li>
+        <li><a href="cellar">Cellar Temp/Humidity</a></li>
+        <li><a href="rain">Rainfall</a></li>
+    </ul>
+{% endblock %}
+
+{% block body %}
+    <p/>
+    <ul class="nav nav-tabs">
+        <li {% if active_link == "current" %} class="active" {% endif %}>
+            <a href="/outside">Current Readings</a></li>
+        <li {% if active_link == "24" %} class="active" {% endif %}>
+            <a href="/outside/detail/{{day_ago_datetime|urlencode}}_24">Last 24 hours</a></li>
+        <li {% if active_link == "48" %} class="active" {% endif %}>
+            <a href="/outside/detail/{{two_days_ago_datetime|urlencode}}_48">Last 48 hours</a></li>
+        <li {% if active_link == "week" %} class="active" {% endif %}>
+            <a href="/outside/summary/{{week_ago_datetime|urlencode}}_week">Last Week</a></li>
+        <li {% if active_link == "ytd" %} class="active" {% endif %}>
+            <a href="/outside/summary/{{year_start_datetime|urlencode}}_ytd">Year to date</a></li>
+    </ul>
+
+
+    <div class="row">
+    <div class="col-md-4">
+    <h3 align="center">Past</h3>
+    <table class="table table-striped">
+    <thead>
+    <tr>
+        <th rowspan=2/>
+        <th rowspan=2>At This Time</th>
+        <th colspan=2>Min's</th>
+        <th colspan=2>Max's</th>
+    </tr>
+    <tr>
+        <th>Obs</th>
+        <th>Pred</th>
+        <th>Obs</th>
+        <th>Pred</th>
+    </tr>
+    </thead>
+    {% for prior in past %}
+        <tr>
+        <td>{{ prior.label }}</td>
+        <td>{{ prior.at_this_time }}</td>
+        <td>{{ prior.min_actual }}</td>
+        <td>{{ prior.min_prediction }}</td>
+        <td>{{ prior.max_actual }}</td>
+        <td>{{ prior.max_prediction }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+    </div>
+    <div class="col-md-4">
+    <h3 align="center">Now</h3>
+    <table class="table table-striped">
+    <tr>
+        <td>Last Reading</td>
+        <td> {{ current_temp.when }} </td>
+    <tr>
+    <tr>
+        <td>Current Temp</td>
+        <td> {{ current_temp.value|stringformat:".1f" }} </td>
+    <tr>
+    <tr>
+        <td>Current Temp</td>
+        <td> {{ current_humidity.value|stringformat:".1f" }} </td>
+    <tr>
+    </table>
+    </div>
+
+    <div class="col-md-4">
+    <h3 align="center">Future</h3>
+    <table class="table table-striped">
+    <thead>
+    <tr>
+        <th/>
+        <th>Min</th>
+        <th>Max</th>
+    </tr>
+    </thead>
+    <tr>
+        <td>Today</td>
+        <td> {{ prediction.min1|stringformat:".1f" }} </td>
+        <td> {{ prediction.max1|stringformat:".1f" }} </td>
+    </tr>
+    <tr>
+        <td>Tomorrow</td>
+        <td> {{ prediction.min2|stringformat:".1f" }} </td>
+        <td> {{ prediction.max2|stringformat:".1f" }} </td>
+    </tr>
+    <tr>
+        <td>+2</td>
+        <td> {{ prediction.min3|stringformat:".1f" }} </td>
+        <td> {{ prediction.max3|stringformat:".1f" }} </td>
+    </tr>
+    <tr>
+        <td>+3</td>
+        <td> {{ prediction.min4|stringformat:".1f" }} </td>
+        <td> {{ prediction.max4|stringformat:".1f" }} </td>
+    </tr>
+    <tr>
+        <td>+4</td>
+        <td> {{ prediction.min5|stringformat:".1f" }} </td>
+        <td> {{ prediction.max5|stringformat:".1f" }} </td>
+    </tr>
+    <tr>
+        <td>+5</td>
+        <td> {{ prediction.min6|stringformat:".1f" }} </td>
+        <td> {{ prediction.max6|stringformat:".1f" }} </td>
+    </tr>
+    <tr>
+        <td>+6</td>
+        <td> {{ prediction.min7|stringformat:".1f" }} </td>
+        <td> {{ prediction.max7|stringformat:".1f" }} </td>
+    </tr>
+    </table>
+    </div>
+    </div>
+
+
+{% endblock %}
+
+

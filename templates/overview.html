@@ -1,0 +1,73 @@
+{% extends "home_automation_base.html" %}
+{% block nav %}
+    <ul class="nav nav-tabs">
+        <li class="active"><a href="/">Overview</a></li>
+        <li><a href="/circuits/">Sprinklers</a></li>
+        <li><a href="/outside">Outside Temp/Humidity</a></li>
+        <li><a href="/cellar">Cellar Temp/Humidity</a></li>
+        <li><a href="/rain">Rainfall</a></li>
+    </ul>
+{% endblock %}
+
+{% block body %}
+    <table class="table table-striped table-condensed">
+    <tr>
+        <th>Sensor</th>
+        <th>When</th>
+        <th>Reading</th>
+    </tr>
+
+    {% for sensor in sensors %}
+        <tr>
+            <td>{{ sensor.metadata.name }}</a></td>
+            <td>{{ sensor.reading.when }}</td>
+            {% if sensor.metadata.sensor_type != 'R' %}
+                <td>{{ sensor.reading.value|stringformat:".1f" }} {{ sensor.metadata.units }}</td>
+            {% else %}
+                <td></td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+    <tr>
+        <td>Predicted Max Temps</a></td>
+        <td>{{ prediction.when }}</td>
+        <td>
+            {{ prediction.max1|stringformat:".1f" }},
+            {{ prediction.max2|stringformat:".1f" }},
+            {{ prediction.max3|stringformat:".1f" }},
+            {{ prediction.max4|stringformat:".1f" }},
+            {{ prediction.max5|stringformat:".1f" }},
+            {{ prediction.max6|stringformat:".1f" }},
+            {{ prediction.max7|stringformat:".1f" }}
+        </td>
+    </tr>
+    <tr>
+        <td>Predicted Min Temps</a></td>
+        <td>{{ prediction.when }}</td>
+        <td>
+            {{ prediction.min1|stringformat:".1f" }},
+            {{ prediction.min2|stringformat:".1f" }},
+            {{ prediction.min3|stringformat:".1f" }},
+            {{ prediction.min4|stringformat:".1f" }},
+            {{ prediction.min5|stringformat:".1f" }},
+            {{ prediction.min6|stringformat:".1f" }},
+            {{ prediction.min7|stringformat:".1f" }}
+        </td>
+    </tr>
+    </table>
+    <table class="table table-striped table-condensed">
+    <tr>
+        <th>Circuit</th>
+        <th>Enabled</th>
+        <th>Status</th>
+    </tr>
+    {% for circuit in circuits %}
+        <tr>
+            <td><a href="/circuits/{{ circuit.id }}/">{{ circuit.label }}</a></td>
+            <td>{% if circuit.disabled %} DISABLED {% else %} ENABLED {% endif %}</td>
+            <td>{% if circuit.current_state %} WATERING {% else %} OFF {% endif %}</td>
+        </tr>
+    {% endfor %}
+    </table>
+
+{% endblock %}

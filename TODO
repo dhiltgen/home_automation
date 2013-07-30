@@ -1,0 +1,54 @@
+11/24/13
+ - Make nav bar at the top stick and the rest of the panel scroll as needed
+ View source of view-source:http://getbootstrap.com/javascript/#scrollspy
+ Need to refactor top-level nav bar so it's common and breadcrumbed
+ Same for sensor sub-nav bar, so both can be pinned
+ - Change the top-level page
+    - Sprinkler control page
+        - Set up recurring watering time
+        - Adjust rain manipulation settings (details TBD)
+
+How to do dynamic range behavior...
+^sensor/#1/date1$ (date1 through now)
+^sensor/#1/date1/date2$ (date1-date2)
+^sensor/#1/#2/date1/date2$ Show both sensors 1 and 2 in the given range
+
+    - Link to rainfall landing page
+        - Show last 24 hours (can set the date to a specific date)
+        - Show last week
+        - Show last month
+        - Show last year
+        - Show year-to-date
+    - Link to outside readings
+        - Show last 24 hours (can set the date to a specific date)
+        - Show last week
+        - Show last month
+        - Show last year
+        - Show year-to-date
+    - link to cellar readings
+        - Show last 24 hours (can set the date to a specific date)
+        - Show last week
+        - Show last month
+        - Show last year
+        - Show year-to-date
+
+    Left on the TODO list:
+     * Wire it up to the back-end so it actually controls things
+     * Figure out how to do background processing using the datamodel
+     * Implement the history stuff
+     * Implement scheduling, and try to make it resilient (cron?)
+     * Make sure that we err on the side of turning sprinklers off in the
+       face of errors so things don't wind up getting stuck on indefinitely
+       due to software bugs
+     * Better templates, branding, look and feel, etc.
+
+# Random notes from last dev session
+mysql -u root -p
+select * from home_automation.sensor_data_sensor;
+
+
+home_automation/templates/overview.html needs more work
+home_automation/urls.py was in progress...
+
+Running: python ./manage.py runserver 0.0.0.0:8000
+
