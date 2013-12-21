@@ -11,6 +11,18 @@ do)  Ultimately the goal is to have smart sprinklers that can use rain,
 temp, and humidity information to tailor the frequency and duration of
 the watering cycles.
 
+# Wipe old data
+python ./manage.py flush
 
+# sync up the DB schema
 python ./manage.py syncdb
+
+# Load the known sprinkler circuits
+python ./loadCircuits.py
+
+# Migrate data from the old DB
+python ./migrateData.py
+
+# Run the server and see what happens...
 python ./manage.py runserver
+

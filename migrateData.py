@@ -1,6 +1,9 @@
 import os
 import sys
 import datetime
+from pytz import timezone
+
+pacific = timezone('US/Pacific')
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
@@ -25,7 +28,7 @@ if __name__ == "__main__":
                 for line in readings:
                     raw_when, value = line.split(',')
                     when = datetime.datetime.strptime(
-                        raw_when, '%Y-%m-%d %H:%M:%S').replace(tzinfo=utc)
+                        raw_when, '%Y-%m-%d %H:%M:%S').replace(tzinfo=pacific)
                     r = Reading(sensor=s, when=when, value=value)
                     r.save()
 
@@ -36,7 +39,7 @@ if __name__ == "__main__":
                 raw_when, min1, min2, min3, min4, min5, min6, min7, \
                     max1, max2, max3, max4, max5, max6, max7 = line.split(',')
                 when = datetime.datetime.strptime(
-                    raw_when, '%Y-%m-%d %H:%M:%S').replace(tzinfo=utc)
+                    raw_when, '%Y-%m-%d %H:%M:%S').replace(tzinfo=pacific)
                 r = Prediction(when=when,
                                min1=min1,
                                min2=min2,
