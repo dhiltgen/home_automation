@@ -6,6 +6,9 @@ from django.utils.timezone import utc
 from sensor_data.models import Sensor, Reading, Prediction
 from datetime import datetime, timedelta
 
+def get_sensor(name):
+    return Sensor.objects.filter(name=name)[0]
+
 def prime_results(request):
     results = dict()
     humidity_sensor = Sensor.objects.filter(name='Outside Humidity')[0]
