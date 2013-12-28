@@ -1,11 +1,14 @@
 from django.conf.urls import patterns, include, url
 from django.views.generic import DetailView, ListView
-from sprinklers.models import Circuit
+from sprinklers.models import Circuit, detect_current_state
 
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
+
+# Make sure we have current state from the sprinklers
+detect_current_state()
 
 urlpatterns = patterns('',
     url(r'^$', 'sprinklers.views.summary', name='overview'),

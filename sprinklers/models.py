@@ -2,6 +2,9 @@ from django.db import models
 from django.utils.timezone import utc
 import datetime
 import subprocess
+import logging
+
+log = logging.getLogger(__name__)
 
 # Create your models here.
 
@@ -47,14 +50,22 @@ class Circuit(models.Model):
             self.last_duration = int(duration)
         else:
             self.last_duration = None
+	# Make sure all other sprinklers are turned off first
+	for circuit in Circuit.objects.exclude(id=self.id):
+            if circuit.current_state:
+                circuit.stop_watering()
+		circuit.save()
         subprocess.check_output(['/usr/bin/owwrite', self.path, '1'])
 
     def stop_watering(self):
         self.current_state = False
         # update the duration so it's accurate
         start = self.last_watered
-        finish = datetime.datetime.utcnow().replace(tzinfo=utc)
-        delta = (finish - start).total_seconds()
+	if start is not None:
+            finish = datetime.datetime.utcnow().replace(tzinfo=utc)
+            delta = (finish - start).total_seconds()
+	else:
+            delta = 1
         if delta < 60:
             self.last_duration = 1
         else:

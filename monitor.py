@@ -9,6 +9,15 @@ import httplib
 import os
 import subprocess
 import sys
+import logging
+
+log = logging.getLogger(__name__)
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
+from sensor_data.models import Sensor, Reading, Prediction
+from sprinklers.models import Circuit
+from django.utils.timezone import utc
+from django.db import transaction
 
 sensors = [
    { 'name':'Outside Humidity',
@@ -33,15 +42,46 @@ sensors = [
      'subsensor':'counters.B'}
    ]
 
+def cycle_sprinklers():
+    """
+    Iterate through the sprinkler circuits and update as needed
+
+    This code will check for scheduled starts, and expired durations
+    and start/stop circuits as needed.
+    """
+
+    utcnow = datetime.datetime.utcnow().replace(tzinfo=utc)
+    # First turn anything off that needs to be turned off
+    circuits = Circuit.objects.all()
+    for circuit in circuits:
+        if not circuit.current_state:
+            continue
+        if circuit.last_duration:
+            duration = datetime.timedelta(minutes=circuit.last_duration)
+        else:
+            # Don't let them go more than 90 minutes without a duration
+            duration = datetime.timedelta(minutes=90)
+        if (circuit.last_watered + duration) < utcnow:
+            log.info("Stopping circuit %s", circuit.label)
+            circuit.stop_watering()
+            circuit.save()
+            # Theoretically we should never have multiples running
+            # but we'll continue looping just to be paranoid
+        else:
+            timeleft = utcnow - circuit.last_watered - duration
+            log.debug("Circuit %s still running for %r", circuit.label,
+                      timeleft)
+
+    # Now check to see if we have any circuits that need to be started
+    #TODO
+
 
 if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
-    from sensor_data.models import Sensor, Reading, Prediction
-    from django.utils.timezone import utc
-    from django.db import transaction
+    logging.basicConfig(level=logging.DEBUG)
 
-    # XXX Are these timezones actually set up correctly?
     dt = datetime.datetime.utcnow().replace(tzinfo=utc)
+
+    cycle_sprinklers()
 
     for sensor in sensors:
         try:

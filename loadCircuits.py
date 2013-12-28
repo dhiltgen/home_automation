@@ -3,7 +3,7 @@ import sys
 
 data = [
  ('Back lawn (middle)', '/29.B72E08000000/PIO.1'),
- ('Back Lawn (front)', '/29.B72E08000000//PIO.4'),
+ ('Back Lawn (front)', '/29.B72E08000000/PIO.4'),
  ('Blueberries', '/29.B72E08000000/PIO.2'),
  ('Roses', '/29.B72E08000000/PIO.3'),
  ('Garden', '/29.B72E08000000/PIO.5'),
