@@ -26,3 +26,6 @@ python ./migrateData.py
 # Run the server and see what happens...
 python ./manage.py runserver
 
+
+# Occasionally:
+python manage.py collectstatic

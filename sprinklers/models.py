@@ -1,8 +1,27 @@
 from django.db import models
 from django.utils.timezone import utc
 import datetime
+import subprocess
 
 # Create your models here.
+
+
+def detect_current_state():
+    """
+    Query the known sensors, and update their current state from live data
+    """
+    for circuit in Circuit.objects.all():
+        try:
+            current_state = int(subprocess.check_output(
+                ['/usr/bin/owread', circuit.path]))
+
+            if current_state != circuit.current_state:
+                log.info("Circuit %s doesn't match current state - updating to %d", circuit.label, current_state)
+                circuit.current_state = current_state
+                circuit.save()
+        except Exception as e:
+            log.exception("Failed to read circuit %s", circuit.label)
+
 
 class Circuit(models.Model):
     path = models.CharField(max_length=128, blank=True)
@@ -22,18 +41,15 @@ class Circuit(models.Model):
                                       "ON" if self.current_state else "OFF")
 
     def start_watering(self, duration):
-        # TODO - Actually call out to the 1-wire tools
-        #
         self.current_state = True
         self.last_watered = datetime.datetime.utcnow().replace(tzinfo=utc)
         if duration and duration != '':
             self.last_duration = int(duration)
         else:
             self.last_duration = None
+        subprocess.check_output(['/usr/bin/owwrite', self.path, '1'])
 
     def stop_watering(self):
-        # TODO - Actually call out to the 1-wire tools
-        #
         self.current_state = False
         # update the duration so it's accurate
         start = self.last_watered
@@ -43,6 +59,7 @@ class Circuit(models.Model):
             self.last_duration = 1
         else:
             self.last_duration = int(delta / 60)
+        subprocess.check_output(['/usr/bin/owwrite', self.path, '0'])
 
 
 class History(models.Model):
