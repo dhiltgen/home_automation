@@ -1,0 +1,77 @@
+{% extends "home_automation_base.html" %}
+{% block nav %}
+    <ul class="nav nav-tabs">
+        <li><a href="/">Overview</a></li>
+        <li><a href="/circuits">Sprinklers</a></li>
+        <li><a href="/outside">Outside Temp/Humidity</a></li>
+        <li class="active"><a href="/cellar">Cellar Temp/Humidity</a></li>
+        <li><a href="/rain">Rainfall</a></li>
+    </ul>
+{% endblock %}
+
+{% block body %}
+    <p/>
+    <ul class="nav nav-tabs">
+        <li {% if active_link == "current" %} class="active" {% endif %}>
+            <a href="/cellar">Current Readings</a></li>
+        <li {% if active_link == "24" %} class="active" {% endif %}>
+            <a href="/cellar/detail/{{day_ago_datetime|urlencode}}_24">Last 24 hours</a></li>
+        <li {% if active_link == "48" %} class="active" {% endif %}>
+            <a href="/cellar/detail/{{two_days_ago_datetime|urlencode}}_48">Last 48 hours</a></li>
+        <li {% if active_link == "week" %} class="active" {% endif %}>
+            <a href="/cellar/summary/{{week_ago_datetime|urlencode}}_week">Last Week</a></li>
+        <li {% if active_link == "ytd" %} class="active" {% endif %}>
+            <a href="/cellar/summary/{{year_start_datetime|urlencode}}_ytd">Year to date</a></li>
+    </ul>
+
+
+    <div class="row">
+    <div class="col-md-6">
+    <h3 align="center">Past</h3>
+    <table class="table table-striped">
+    <thead>
+    <tr>
+        <th rowspan=2/>
+        <th rowspan=2>At This Time</th>
+        <th class="text-center">Min's</th>
+        <th class="text-center">Max's</th>
+    </tr>
+    <tr>
+        <th>Obs</th>
+        <th>Obs</th>
+    </tr>
+    </thead>
+    {% for prior in past %}
+        <tr>
+        <td>{{ prior.label }}</td>
+        <td>{{ prior.at_this_time|stringformat:".1f"  }}</td>
+        <td>{{ prior.min_actual|stringformat:".1f"  }}</td>
+        <td>{{ prior.max_actual|stringformat:".1f"  }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+    </div>
+    <div class="col-md-6">
+    <h3 align="center">Now</h3>
+    <table class="table table-striped">
+    <tr>
+        <td>Last Reading</td>
+        <td> {{ current_temp.when }} </td>
+    <tr>
+    <tr>
+        <td>Temp</td>
+        <td> {{ current_temp.value|stringformat:".1f" }} </td>
+    <tr>
+    <tr>
+        <td>Humidity</td>
+        <td> {{ current_humidity.value|stringformat:".1f" }} </td>
+    <tr>
+    </table>
+    </div>
+
+    </div>
+
+
+{% endblock %}
+
+

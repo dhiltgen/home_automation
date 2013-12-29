@@ -40,6 +40,23 @@ urlpatterns = patterns('',
         '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
         '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d\d)\+'
         '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$', 'sensor_data.views.outside_summary', name='outside_summary'),
+    url(r'^cellar$', 'sensor_data.views.cellar_current', name='cellar_current'),
+    url(r'^cellar/detail/'
+        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
+        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d\d)\+'
+        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)_(?P<active_link>\S+)$', 'sensor_data.views.cellar_detail', name='cellar_detail'),
+    url(r'^cellar/detail/'
+        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
+        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d\d)\+'
+        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$', 'sensor_data.views.cellar_detail', name='cellar_detail'),
+    url(r'^cellar/summary/'
+        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
+        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d\d)\+'
+        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)_(?P<active_link>\S+)$', 'sensor_data.views.cellar_summary', name='cellar_summary'),
+    url(r'^cellar/summary/'
+        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
+        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d\d)\+'
+        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$', 'sensor_data.views.cellar_summary', name='cellar_summary'),
 )
 urlpatterns += patterns('',
     url(r'^admin/', include(admin.site.urls)),

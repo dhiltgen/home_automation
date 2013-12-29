@@ -6,13 +6,13 @@ from django.utils.timezone import utc
 from sensor_data.models import Sensor, Reading, Prediction
 from datetime import datetime, timedelta
 
-def get_sensor(name):
-    return Sensor.objects.filter(name=name)[0]
+def get_humidty_and_temp_sensors(name):
+    humidity = Sensor.objects.filter(name=name + " Humidity")[0]
+    temp = Sensor.objects.filter(name=name + " Temperature")[0]
+    return (humidity, temp)
 
-def prime_results(request):
+def prime_results(request, humidity_sensor, temp_sensor):
     results = dict()
-    humidity_sensor = Sensor.objects.filter(name='Outside Humidity')[0]
-    temp_sensor = Sensor.objects.filter(name='Outside Temperature')[0]
     results['temp_sensor'] = temp_sensor
     results['humidity_sensor'] = humidity_sensor
     current_temp = Reading.objects.filter(sensor_id=temp_sensor.id).latest('when')
@@ -32,14 +32,13 @@ def prime_results(request):
     results['current_temp'] = current_temp
     return results
 
-def prior_temp(offset):
+def prior_temp(offset, temp_sensor):
     """
     Find the temp readings for this time over the last few days
 
     :param count: The number of days ago to retrieve
     :returns: The reading or None
     """
-    temp_sensor = Sensor.objects.filter(name='Outside Temperature')[0]
     try:
         res = Reading.objects.raw(
         'select * from sensor_data_reading where '
@@ -67,8 +66,7 @@ def prior_prediction(offset):
         print 'No prior prediction for', offset
         return None
 
-def prior_min_max(offset):
-    temp_sensor = Sensor.objects.filter(name='Outside Temperature')[0]
+def prior_min_max(offset, temp_sensor):
     try:
         reading = Reading.objects.raw(
             'select cast(`when` as date), min(value) as minimum, '
@@ -82,8 +80,21 @@ def prior_min_max(offset):
     except:
         return ("NA", "NA")
 
+
 def outside_current(request):
-    results = prime_results(request)
+    (humidity_sensor, temp_sensor)  = get_humidty_and_temp_sensors('Outside')
+    return generic_current(request, 'sensor_data/outside_current.html',
+                           humidity_sensor, temp_sensor)
+
+
+def cellar_current(request):
+    (humidity_sensor, temp_sensor)  = get_humidty_and_temp_sensors('Cellar')
+    return generic_current(request, 'sensor_data/cellar_current.html',
+                           humidity_sensor, temp_sensor)
+
+
+def generic_current(request, template, humidity_sensor, temp_sensor):
+    results = prime_results(request, humidity_sensor, temp_sensor)
     results['active_link'] = 'current'
 
     results['prediction'] = Prediction.objects.latest('when')
@@ -101,7 +112,7 @@ def outside_current(request):
             # TODO - label for other days
             past_day['label'] = str(-i)
         try:
-            past_day['at_this_time'] = prior_temp(i).value
+            past_day['at_this_time'] = prior_temp(i, temp_sensor).value
         except:
             past_day['at_this_time'] = 'NA'
         prediction = prior_prediction(i)
@@ -111,38 +122,121 @@ def outside_current(request):
         else:
             past_day['min_prediction'] = 'NA'
             past_day['max_prediction'] = 'NA'
-        (past_day['min_actual'], past_day['max_actual']) = prior_min_max(i)
+        (past_day['min_actual'], past_day['max_actual']) = prior_min_max(
+            i, temp_sensor)
         past.append(past_day)
     results['past'] = past
 
+    return render_to_response(template, results)
 
-    return render_to_response('sensor_data/outside_current.html', results)
 
 def outside_summary(request, start_year, start_month, start_day,
                    start_hour, start_minute, start_second,
                    tz_hour, tz_minute, active_link=None):
-    results = prime_results(request)
+    (humidity_sensor, temp_sensor)  = get_humidty_and_temp_sensors('Outside')
+    return generic_summary(request, 'sensor_data/outside_summary.html',
+                           humidity_sensor, temp_sensor,
+                           start_year, start_month, start_day,
+                           start_hour, start_minute, start_second,
+                           tz_hour, tz_minute, active_link)
+
+
+def cellar_summary(request, start_year, start_month, start_day,
+                   start_hour, start_minute, start_second,
+                   tz_hour, tz_minute, active_link=None):
+    (humidity_sensor, temp_sensor)  = get_humidty_and_temp_sensors('Cellar')
+    return generic_summary(request, 'sensor_data/cellar_summary.html',
+                           humidity_sensor, temp_sensor,
+                           start_year, start_month, start_day,
+                           start_hour, start_minute, start_second,
+                           tz_hour, tz_minute, active_link)
+
+
+def generic_summary(request, template, humidity_sensor, temp_sensor,
+                    start_year, start_month, start_day,
+                    start_hour, start_minute, start_second,
+                    tz_hour, tz_minute, active_link=None):
+    results = prime_results(request, humidity_sensor, temp_sensor)
     start = datetime(int(start_year), int(start_month), int(start_day), int(start_hour), int(start_minute), int(start_second), 0).replace(tzinfo=utc)
 
-
     results['active_link'] = active_link
-    results['readings'] = Reading.objects.raw(
+    raw_temps = [x for x in Reading.objects.raw(
         "select cast(`when` as date), min(value) as minimum, "
         "max(value) as maximum, id, sensor_id "
         "from sensor_data_reading where sensor_id='%s' and "
         "`when` >= '%s' "
-        "group by 1 order by 1" %
-        (results['temp_sensor'].id, start.strftime('%Y-%m-%d %H:%M:%S')))
-    return render_to_response('sensor_data/outside_summary.html', results)
+        "group by 1 order by 1 desc" %
+        (temp_sensor.id, start.strftime('%Y-%m-%d %H:%M:%S')))]
+    raw_humidities = [x for x in Reading.objects.raw(
+        "select cast(`when` as date), min(value) as minimum, "
+        "max(value) as maximum, id, sensor_id "
+        "from sensor_data_reading where sensor_id='%s' and "
+        "`when` >= '%s' "
+        "group by 1 order by 1 desc" %
+        (humidity_sensor.id, start.strftime('%Y-%m-%d %H:%M:%S')))]
+    # XXX this is a little fragile as it assumes there's always matching
+    #     entries between temp and humidity readings
+    readings = []
+    while len(raw_temps) > 0:
+        reading = raw_temps.pop()
+        try:
+            humidity = raw_humidities.pop()
+        except:
+            # Recycle prior reading
+            pass
+        reading.humidity_minimum = humidity.minimum
+        reading.humidity_maximum = humidity.maximum
+        readings.append(reading)
+    results['readings'] = readings
+    return render_to_response(template, results)
+
 
 def outside_detail(request, start_year, start_month, start_day,
                    start_hour, start_minute, start_second,
                    tz_hour, tz_minute, active_link=None):
-    humidity_sensor = Sensor.objects.filter(name='Outside Humidity')[0]
-    temp_sensor = Sensor.objects.filter(name='Outside Temperature')[0]
-    results = prime_results(request)
+    (humidity_sensor, temp_sensor)  = get_humidty_and_temp_sensors('Outside')
+    return generic_detail(request, 'sensor_data/outside_detail.html',
+                          humidity_sensor, temp_sensor,
+                          start_year, start_month, start_day,
+                          start_hour, start_minute, start_second,
+                          tz_hour, tz_minute, active_link)
+
+
+def cellar_detail(request, start_year, start_month, start_day,
+                   start_hour, start_minute, start_second,
+                   tz_hour, tz_minute, active_link=None):
+    (humidity_sensor, temp_sensor)  = get_humidty_and_temp_sensors('Cellar')
+    return generic_detail(request, 'sensor_data/cellar_detail.html',
+                          humidity_sensor, temp_sensor,
+                          start_year, start_month, start_day,
+                          start_hour, start_minute, start_second,
+                          tz_hour, tz_minute, active_link)
+
+
+def generic_detail(request, template, humidity_sensor, temp_sensor,
+                   start_year, start_month, start_day,
+                   start_hour, start_minute, start_second,
+                   tz_hour, tz_minute, active_link=None):
+    results = prime_results(request, humidity_sensor, temp_sensor)
     start = datetime(int(start_year), int(start_month), int(start_day), int(start_hour), int(start_minute), int(start_second), 0).replace(tzinfo=utc)
     results['active_link'] = active_link
-    results['readings'] = Reading.objects.filter(sensor_id=temp_sensor.id,
-                                                 when__gt=start)
-    return render_to_response('sensor_data/outside_detail.html', results)
+    raw_temps = [x for x in Reading.objects.filter(
+                 sensor_id=temp_sensor.id, when__gt=start).order_by('-when')]
+    raw_humidities = [x for x in Reading.objects.filter(
+                      sensor_id=humidity_sensor.id,
+                      when__gt=start).order_by('-when')]
+
+    # XXX this is a little fragile as it assumes there's always matching
+    #     entries between temp and humidity readings
+    readings = []
+    while len(raw_temps) > 0:
+        reading = raw_temps.pop()
+        try:
+            humidity = raw_humidities.pop()
+        except:
+            # Recycle prior reading
+            pass
+        reading.humidity = humidity.value
+        readings.append(reading)
+    results['readings'] = readings
+    return render_to_response(template, results)
