@@ -2,6 +2,7 @@ import os
 import sys
 import datetime
 import gc
+from multiprocessing import Process
 from pytz import timezone
 
 pacific = timezone('US/Pacific')
@@ -11,6 +12,39 @@ BUF_SIZE=1024
 
 # Set to false if this is a fresh load to speed it up
 DUP_CHECK=True
+
+def do_work(name, buf):
+    s = Sensor.objects.filter(name=name)[0]
+    # Check for dup's - assume they're batched
+    if DUP_CHECK:
+        raw_when, value = buf[-1].split(',')
+        when = datetime.datetime.strptime(
+            raw_when, '%Y-%m-%d %H:%M:%S').\
+            replace(tzinfo=pacific)
+        r = Reading.objects.filter(sensor=s,
+                                   when=when,
+                                   value=value)
+        if len(r) == 1:
+            print 'Skipping existing block through:', when
+            return
+
+    with transaction.commit_on_success():
+        for line in buf:
+            raw_when, value = line.split(',')
+            when = datetime.datetime.strptime(
+                raw_when, '%Y-%m-%d %H:%M:%S').\
+                replace(tzinfo=pacific)
+
+            if DUP_CHECK:
+                # Look for existing reading first...
+                r = Reading.objects.filter(sensor=s,
+                                           when=when,
+                                           value=value)
+                if len(r) == 1:
+                    print 'Skipping existing entry', when
+                    continue
+            r = Reading(sensor=s, when=when, value=value)
+            r.save()
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
@@ -23,9 +57,7 @@ if __name__ == "__main__":
                     sensor_type, units):
         with transaction.commit_on_success():
             res = Sensor.objects.filter(name=name)
-            if len(res) == 1:
-                s = res[0]
-            else:
+            if len(res) != 1:
                 s = Sensor(name=name, server=server, device=device,
                            sensor_type=sensor_type, units=units,
                            subsensor=subsensor)
@@ -44,36 +76,10 @@ if __name__ == "__main__":
                 if len(buf) == 0:
                     break
 
-                # Check for dup's - assume they're batched
-                if DUP_CHECK:
-                    raw_when, value = buf[-1].split(',')
-                    when = datetime.datetime.strptime(
-                        raw_when, '%Y-%m-%d %H:%M:%S').\
-                        replace(tzinfo=pacific)
-                    r = Reading.objects.filter(sensor=s,
-                                               when=when,
-                                               value=value)
-                    if len(r) == 1:
-                        print 'Skipping existing block through:', when
-                        continue
+                p = Process(target=do_work, args=(name, buf,))
+                p.start()
+                p.join()
 
-                with transaction.commit_on_success():
-                    for line in buf:
-                        raw_when, value = line.split(',')
-                        when = datetime.datetime.strptime(
-                            raw_when, '%Y-%m-%d %H:%M:%S').\
-                            replace(tzinfo=pacific)
-
-                        if DUP_CHECK:
-                            # Look for existing reading first...
-                            r = Reading.objects.filter(sensor=s,
-                                                       when=when,
-                                                       value=value)
-                            if len(r) == 1:
-                                print 'Skipping existing entry', when
-                                continue
-                        r = Reading(sensor=s, when=when, value=value)
-                        r.save()
 
     # NWS predictions are "special"
     with open('migrate_data/nws_predictions.txt', 'r') as readings:
