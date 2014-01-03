@@ -11,26 +11,35 @@ def get_humidty_and_temp_sensors(name):
     temp = Sensor.objects.filter(name=name + " Temperature")[0]
     return (humidity, temp)
 
-def prime_results(request, humidity_sensor, temp_sensor):
+def common_prime_results(request, sensor):
     results = dict()
+    current_reading = Reading.objects.filter(sensor_id=sensor.id).latest('when')
+    results['latest_datetime'] = current_reading.when
+    day = timedelta(days=1)
+    week = timedelta(weeks=1)
+    year = timedelta(weeks=52)
+
+    results['day_ago_datetime'] = current_reading.when - day
+    results['two_days_ago_datetime'] = current_reading.when - day - day
+    results['week_ago_datetime'] = current_reading.when - week
+    results['year_ago_datetime'] = current_reading.when - year
+    results['year_start_datetime'] = datetime(year=current_reading.when.year,
+                                              month=1, day=1,
+                                              tzinfo=current_reading.when.tzinfo)
+    return results
+
+
+def prime_results(request, humidity_sensor, temp_sensor):
+    results = common_prime_results(request, temp_sensor)
     results['temp_sensor'] = temp_sensor
     results['humidity_sensor'] = humidity_sensor
     current_temp = Reading.objects.filter(sensor_id=temp_sensor.id).latest('when')
     results['current_humidity'] = \
         Reading.objects.filter(sensor_id=humidity_sensor.id).latest('when')
-    results['latest_datetime'] = current_temp.when
 
-    day = timedelta(days=1)
-    week = timedelta(weeks=1)
-
-    results['day_ago_datetime'] = current_temp.when - day
-    results['two_days_ago_datetime'] = current_temp.when - day - day
-    results['week_ago_datetime'] = current_temp.when - week
-    results['year_start_datetime'] = datetime(year=current_temp.when.year,
-                                              month=1, day=1,
-                                              tzinfo=current_temp.when.tzinfo)
     results['current_temp'] = current_temp
     return results
+
 
 def prior_temp(offset, temp_sensor):
     """
@@ -51,31 +60,31 @@ def prior_temp(offset, temp_sensor):
         print 'No prior temp for', offset
         return None
 
-# TODO - Make these calculations a little smarter about when to cross
-#        over from today to yesterday, and so on...
+
 def prior_prediction(offset):
     try:
         res = Prediction.objects.raw(
             'select * from sensor_data_prediction where '
-            '`when` <= subtime(utc_timestamp(), "%d:00:00.0") and '
-            '`when` >= subtime(utc_timestamp(), "%d:00:00.0") '
+            '`when` <= subdate(utc_date(), "%d") and '
+            '`when` >= subdate(utc_date(), "%d") '
             'order by `when` desc limit 1' %
-            ((offset * 24 - 12, (offset + 1) * 24 - 12)))[0]
+            (offset + 1, (offset + 2)))[0]
         return res
     except:
         print 'No prior prediction for', offset
         return None
 
-def prior_min_max(offset, temp_sensor):
+
+def prior_min_max(offset, sensor):
     try:
         reading = Reading.objects.raw(
             'select cast(`when` as date), min(value) as minimum, '
             'max(value) as maximum, id, sensor_id '
             'from sensor_data_reading where sensor_id="%s" and '
-            '`when` <= subtime(utc_timestamp(), "%d:00:00.0") and '
-            '`when` >= subtime(utc_timestamp(), "%d:00:00.0") '
+            '`when` <= subdate(utc_date(), "%d") and '
+            '`when` >= subdate(utc_date(), "%d") '
             "group by 1 order by 1 desc limit 1" %
-            (temp_sensor.id, offset * 24 - 12, (offset + 1) * 24 - 12))[0]
+            (sensor.id, offset, (offset + 1)))[0]
         return (reading.minimum, reading.maximum)
     except:
         return ("NA", "NA")
@@ -104,9 +113,11 @@ def generic_current(request, template, humidity_sensor, temp_sensor):
 
     # TODO - Add humidity
     past = []
-    for i in range(1, 5):
+    for i in range(0, 4):
         past_day = dict()
-        if i == 1:
+        if i == 0:
+            past_day['label'] = "Today"
+        elif i == 1:
             past_day['label'] = "Yesterday"
         else:
             # TODO - label for other days
@@ -240,3 +251,65 @@ def generic_detail(request, template, humidity_sensor, temp_sensor,
         readings.append(reading)
     results['readings'] = readings
     return render_to_response(template, results)
+
+
+def rain_data(request, start_year=None, start_month=None,
+              start_day=None, start_hour=None, start_minute=None,
+              start_second=None, tz_hour=None, tz_minute=None,
+              active_link=None):
+    sensor = Sensor.objects.filter(name='Rainfall')[0]
+    results = common_prime_results(request, sensor)
+
+    # Some useful intervals for rain data:
+    now = datetime.utcnow().replace(tzinfo=utc)
+    now_year = now.year
+    now_month = now.month
+    rain_season_month_start = 7
+    if now_month < rain_season_month_start:
+        this_season_start = datetime(year=now_year - 1,
+                                     month=rain_season_month_start,
+                                     day=1, tzinfo=utc)
+    else:
+        this_season_start = datetime(year=now_year,
+                                     month=rain_season_month_start,
+                                     day=1, tzinfo=utc)
+    results['this_season_start_datetime'] = this_season_start
+
+    if start_year:
+        start = datetime(int(start_year), int(start_month),
+                         int(start_day)).replace(tzinfo=utc)
+    else:
+        start = this_season_start
+        active_link = "season"
+    results['active_link'] = active_link
+    raw_data = [x for x in Reading.objects.raw(
+        "select cast(`when` as date), value, id, sensor_id "
+        "from sensor_data_reading "
+        "where sensor_id=%d and `when` >= \"%s\" "
+        "group by value order by `when`;" %
+        (sensor.id, start.strftime('%Y-%m-%d %H:%M:%S')))]
+
+    if len(raw_data) == 1:
+        results['readings'] = []
+        results['last_rain'] = 'NA in this interval'
+        return render_to_response('sensor_data/rain.html', results)
+
+    last_rain = datetime.utcnow().replace(tzinfo=utc) - raw_data[-1].when
+    if last_rain.days:
+        results['last_rain'] = '%d days %d hours ago' \
+            % (last_rain.days, last_rain.seconds/(60*60))
+    else:
+        results['last_rain'] = '%d hours ago' % (last_rain.seconds/(60*60))
+    results['readings'] = raw_data
+
+    # Append the very latest reading for completeness in the graph.
+    last = Reading.objects.filter(
+        sensor_id=sensor.id).order_by('-when')[:1]
+    raw_data.append(last[0])
+
+    # Now we process the rain data to normalize it
+    base_value = raw_data[0].value
+    for i in range(len(raw_data)):
+        raw_data[i].inches = (float(raw_data[i].value - base_value)) * 0.01
+
+    return render_to_response('sensor_data/rain.html', results)

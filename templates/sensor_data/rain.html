@@ -1,0 +1,59 @@
+{% extends "home_automation_base.html" %}
+{% block nav %}
+    <ul class="nav nav-tabs">
+        <li><a href="/">Overview</a></li>
+        <li><a href="/circuits">Sprinklers</a></li>
+        <li><a href="/outside">Outside Temp/Humidity</a></li>
+        <li><a href="/cellar">Cellar Temp/Humidity</a></li>
+        <li class="active"><a href="/rain">Rainfall</a></li>
+    </ul>
+{% endblock %}
+
+{% block body %}
+    <p/>
+    <ul class="nav nav-tabs">
+        <li {% if active_link == "season" %} class="active" {% endif %}>
+            <a href="/rain/{{this_season_start_datetime|urlencode}}_season">This Rainy Season</a></li>
+        <li {% if active_link == "week" %} class="active" {% endif %}>
+            <a href="/rain/{{week_ago_datetime|urlencode}}_week">Last Week</a></li>
+        <li {% if active_link == "year" %} class="active" {% endif %}>
+            <a href="/rain/{{year_ago_datetime|urlencode}}_year">Last Year</a></li>
+        <li {% if active_link == "ytd" %} class="active" {% endif %}>
+            <a href="/rain/{{year_start_datetime|urlencode}}_ytd">Year to date</a></li>
+    </ul>
+
+    {% if readings|length > 0 %}
+
+    <script type="text/javascript">
+      function drawVisualization() {
+        // Create and populate the data table.
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', 'When');
+        data.addColumn('number', 'Rainfall');
+        data.addRows([
+    {% for reading in readings %} [new Date({{reading.when.year}}, {{ reading.when.month }} - 1, {{reading.when.day}}, {{reading.when.hour}}, {{reading.when.minute}}, {{reading.when.second}}), {{ reading.inches }}],
+    {% endfor %}
+        ]);
+
+        // Create and draw the visualization.
+        new google.visualization.LineChart(document.getElementById('rainfall')).
+            draw(data, {
+                        width: 800, height: 500,
+                        title: "Cumulative Rainfall",
+                        vAxis: {minValue: 0},
+                        hAxis: {format: 'MMM d, y'}
+                       }
+                );
+      }
+      google.setOnLoadCallback(drawVisualization);
+    </script>
+    {% endif %}
+    <h2>Last rainfall was {{last_rain}}</h2>
+    <div class="row">
+        <div id="rainfall" class="col-md-12"></div>
+    </div>
+
+{% endblock %}
+
+
+

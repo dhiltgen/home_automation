@@ -57,6 +57,15 @@ urlpatterns = patterns('',
         '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
         '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d\d)\+'
         '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$', 'sensor_data.views.cellar_summary', name='cellar_summary'),
+    url(r'^rain$', 'sensor_data.views.rain_data', name='rain_data'),
+    url(r'^rain/'
+        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
+        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d\d)\+'
+        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$', 'sensor_data.views.rain_data', name='rain_data'),
+    url(r'^rain/'
+        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
+        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d\d)\+'
+        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)_(?P<active_link>\S+)$', 'sensor_data.views.rain_data', name='rain_data'),
 )
 urlpatterns += patterns('',
     url(r'^admin/', include(admin.site.urls)),

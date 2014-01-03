@@ -20,6 +20,8 @@
             <a href="/cellar/detail/{{two_days_ago_datetime|urlencode}}_48">Last 48 hours</a></li>
         <li {% if active_link == "week" %} class="active" {% endif %}>
             <a href="/cellar/summary/{{week_ago_datetime|urlencode}}_week">Last Week</a></li>
+        <li {% if active_link == "year" %} class="active" {% endif %}>
+            <a href="/cellar/summary/{{year_ago_datetime|urlencode}}_year">Last Year</a></li>
         <li {% if active_link == "ytd" %} class="active" {% endif %}>
             <a href="/cellar/summary/{{year_start_datetime|urlencode}}_ytd">Year to date</a></li>
     </ul>
