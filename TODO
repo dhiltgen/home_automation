@@ -33,9 +33,16 @@ How to do dynamic range behavior...
         - Show year-to-date
 
     Left on the TODO list:
-     * Wire it up to the back-end so it actually controls things
-     * Figure out how to do background processing using the datamodel
-     * Implement the history stuff
+     * Rain Data consolidation
+       - Drop new readings that are identical to the prior reading
+     * Rain data "storm" identification, and summaries
+       - Look over data and find contiguous 24 hour periods with rain, and
+         summarize their totals over the duration - should be fast after
+         doing the consolidation.
+     * Look for other DB optimizations to try to speed things up more
+     * Main entry page is still too slow on a pi - look at ways to speed it
+       up... maybe a new data object that is a summary object that is replaced
+       every time data is updated by the cronjob
      * Implement scheduling, and try to make it resilient (cron?)
      * Make sure that we err on the side of turning sprinklers off in the
        face of errors so things don't wind up getting stuck on indefinitely
