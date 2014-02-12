@@ -33,7 +33,7 @@
         data.addColumn('datetime', 'When');
         data.addColumn('number', 'Rainfall');
         data.addRows([
-    {% for reading in readings %} [new Date({{reading.when.year}}, {{ reading.when.month }} - 1, {{reading.when.day}}, {{reading.when.hour}}, {{reading.when.minute}}, {{reading.when.second}}), {{ reading.inches }}],
+    {% for reading in readings %} [new Date({{reading.ts.year}}, {{ reading.ts.month }} - 1, {{reading.ts.day}}, {{reading.ts.hour}}, {{reading.ts.minute}}, {{reading.ts.second}}), {{ reading.value }}],
     {% endfor %}
         ]);
 
@@ -51,6 +51,8 @@
     </script>
     {% endif %}
     <h2>Last rainfall was {{last_rain}}</h2>
+    Total rainfal in this duration: {{ total }} inches.
+    <p/>
     <div class="row">
         <div id="rainfall" class="col-md-12"></div>
     </div>

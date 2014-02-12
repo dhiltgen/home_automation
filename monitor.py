@@ -5,42 +5,45 @@
 
 
 import datetime
-import httplib
 import os
 import subprocess
-import sys
 import logging
 
 log = logging.getLogger(__name__)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
-from sensor_data.models import Sensor, Reading, Prediction
+from sensor_data.models import Sensor, Reading
 from sprinklers.models import Circuit
 from django.utils.timezone import utc
-from django.db import transaction
 
 sensors = [
-   { 'name':'Outside Humidity',
-     'server':'sensors:4304',
-     'device':'26.C29821010000',
-     'subsensor':'humidity'},
-   { 'name':'Outside Temperature',
-     'server':'sensors:4304',
-     'device':'26.C29821010000',
-     'subsensor':'temperature'},
-   { 'name':'Cellar Temperature',
-     'server':'proto:4304',
-     'device':'26.489A21010000',
-     'subsensor':'temperature'},
-   { 'name':'Cellar Humidity',
-     'server':'proto:4304',
-     'device':'26.489A21010000',
-     'subsensor':'humidity'},
-   { 'name':'Rainfall',
-     'server':'sensors:4304',
-     'device':'1D.3ACA0F000000',
-     'subsensor':'counters.B'}
-   ]
+    {
+        'name': 'Outside Humidity',
+        'server': 'sensors:4304',
+        'device': '26.C29821010000',
+        'subsensor': 'humidity'},
+    {
+        'name': 'Outside Temperature',
+        'server': 'sensors:4304',
+        'device': '26.C29821010000',
+        'subsensor': 'temperature'},
+    {
+        'name': 'Cellar Temperature',
+        'server': 'proto:4304',
+        'device': '26.489A21010000',
+        'subsensor': 'temperature'},
+    {
+        'name': 'Cellar Humidity',
+        'server': 'proto:4304',
+        'device': '26.489A21010000',
+        'subsensor': 'humidity'},
+    {
+        'name': 'Rainfall',
+        'server': 'sensors:4304',
+        'device': '1D.3ACA0F000000',
+        'subsensor': 'counters.B'}
+    ]
+
 
 def cycle_sprinklers():
     """
@@ -93,13 +96,12 @@ if __name__ == "__main__":
             else:
                 raise Exception("Failed to find existing sensor definition")
 
-
-            val = str(subprocess.check_output(['owread', '-s', sensor['server'], '-F', '/'+sensor['device']+'/'+sensor['subsensor']])).strip()
+            val = str(subprocess.check_output([
+                'owread', '-s', sensor['server'], '-F',
+                '/'+sensor['device']+'/'+sensor['subsensor']])).strip()
             print sensor['name'], val
-            r = Reading(sensor=s, when=dt, value=val)
+            r = Reading(sensor=s, ts=dt, value=val)
             r.save()
 
         except Exception as e:
             print 'Failed to insert data',  sensor['name'], e
-
-

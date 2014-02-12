@@ -1,7 +1,7 @@
 # Create your views here.
-from django.http import HttpResponse, Http404, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
-from django.template import RequestContext
+#from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from sprinklers.models import Circuit
 from sensor_data.models import Sensor, Reading, Prediction
@@ -38,13 +38,16 @@ def summary(request):
     for sensor in Sensor.objects.all().order_by('name'):
         if sensor.sensor_type == 'R':
             # Is there a better way to do this?
-            latest = Reading.objects.filter(sensor_id=sensor.id).latest('when')
-            last_fall = Reading.objects.filter(value=latest.value).order_by('when')[0]
+            latest = Reading.objects.filter(
+                sensor_id=sensor.id).latest('ts')
+            last_fall = Reading.objects.filter(
+                value=latest.value).order_by('ts')[0]
             sensors.append(dict(metadata=sensor, reading=last_fall))
         else:
-            sensors.append(dict(metadata=sensor,
-                 reading=Reading.objects.filter(sensor_id=sensor.id).latest('when')))
-    prediction = Prediction.objects.latest('when')
+            sensors.append(dict(
+                metadata=sensor, reading=Reading.objects.filter(
+                    sensor_id=sensor.id).latest('ts')))
+    prediction = Prediction.objects.latest('ts')
 
     results['sensors'] = sensors
     results['prediction'] = prediction

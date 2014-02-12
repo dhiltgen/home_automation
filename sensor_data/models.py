@@ -1,6 +1,5 @@
 from django.db import models
 
-# Create your models here.
 
 class Sensor(models.Model):
     SENSOR_TYPES = (
@@ -18,10 +17,12 @@ class Sensor(models.Model):
     # TODO - Make this an enum someday, and add smarts for conversions...
     units = models.CharField(max_length=64, blank=False)
 
+
 class Reading(models.Model):
     sensor = models.ForeignKey(Sensor)
-    when = models.DateTimeField(blank=False, db_index=True)
+    ts = models.DateTimeField(blank=False, db_index=True)
     value = models.DecimalField(max_digits=10, decimal_places=4, blank=False)
+
 
 class Prediction(models.Model):
     """
@@ -30,7 +31,7 @@ class Prediction(models.Model):
     Gathered once a day, and used for correlation and predictions on min/max
     temps over the next few days.
     """
-    when = models.DateTimeField(blank=False, db_index=True)
+    ts = models.DateTimeField(blank=False, db_index=True)
     min1 = models.DecimalField(max_digits=10, decimal_places=4, blank=False)
     min2 = models.DecimalField(max_digits=10, decimal_places=4, blank=False)
     min3 = models.DecimalField(max_digits=10, decimal_places=4, blank=False)

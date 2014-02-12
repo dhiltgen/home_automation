@@ -13,11 +13,11 @@ import home_automation.local_settings as local_settings
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': local_settings.db_backend, # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': local_settings.db_name,                      # Or path to database file if using sqlite3.
         'USER': local_settings.db_user,                      # Not used with sqlite3.
         'PASSWORD': local_settings.db_password,                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
+        'HOST': local_settings.db_host,                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
 }

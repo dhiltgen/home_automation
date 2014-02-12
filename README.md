@@ -26,6 +26,16 @@ python ./migrateData.py
 # Run the server and see what happens...
 python ./manage.py runserver
 
+# Dump historical data out to migrate between systems
+python ./manage.py dumpdata --indent 4 > dump.json
+python ./manage.py loaddata dump.json
+
+# Poke around in the raw DB:
+sudo -u postgres createuser -D -A -P automation
+sudo -u postgres createdb -O automation home_automation
+psql -h localhost -W home_automation automation
+\dt
+
 
 # Occasionally:
 python manage.py collectstatic

@@ -33,7 +33,7 @@
           ['x',  'Temperature'],
 
     {% for reading in readings %}
-        ["{{ reading.when }}", {{ reading.value }}],
+        ["{{ reading.ts }}", {{ reading.value }}],
     {% endfor %}
         ]);
 

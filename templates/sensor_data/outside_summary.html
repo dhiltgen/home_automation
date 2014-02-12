@@ -33,7 +33,7 @@
           ['x',  'Lows', 'Highs'],
 
     {% for reading in readings %}
-        ["{{ reading.when }}", {{ reading.minimum }}, {{ reading.maximum }}],
+        ["{{ reading.day|date:'SHORT_DATE_FORMAT'}}", {{ reading.minimum }}, {{ reading.maximum }}],
     {% endfor %}
         ]);
 

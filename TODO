@@ -1,3 +1,7 @@
+11/25/14
+ - Revamp to class based views
+   https://docs.djangoproject.com/en/1.7/topics/class-based-views/intro/
+
 11/24/13
  - Make nav bar at the top stick and the rest of the panel scroll as needed
  View source of view-source:http://getbootstrap.com/javascript/#scrollspy

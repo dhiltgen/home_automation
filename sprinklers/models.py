@@ -1,8 +1,8 @@
 from django.db import models
 from django.utils.timezone import utc
 import datetime
-import subprocess
 import logging
+import subprocess
 
 log = logging.getLogger(__name__)
 
@@ -19,10 +19,11 @@ def detect_current_state():
                 ['/usr/bin/owread', circuit.path]))
 
             if current_state != circuit.current_state:
-                log.info("Circuit %s doesn't match current state - updating to %d", circuit.label, current_state)
+                log.info("Circuit %s doesn't match current state - "
+                         "updating to %d", circuit.label, current_state)
                 circuit.current_state = current_state
                 circuit.save()
-        except Exception as e:
+        except Exception:
             log.exception("Failed to read circuit %s", circuit.label)
 
 
@@ -50,21 +51,21 @@ class Circuit(models.Model):
             self.last_duration = int(duration)
         else:
             self.last_duration = None
-	# Make sure all other sprinklers are turned off first
-	for circuit in Circuit.objects.exclude(id=self.id):
+        # Make sure all other sprinklers are turned off first
+        for circuit in Circuit.objects.exclude(id=self.id):
             if circuit.current_state:
                 circuit.stop_watering()
-		circuit.save()
+                circuit.save()
         subprocess.check_output(['/usr/bin/owwrite', self.path, '1'])
 
     def stop_watering(self):
         self.current_state = False
         # update the duration so it's accurate
         start = self.last_watered
-	if start is not None:
+        if start is not None:
             finish = datetime.datetime.utcnow().replace(tzinfo=utc)
             delta = (finish - start).total_seconds()
-	else:
+        else:
             delta = 1
         if delta < 60:
             self.last_duration = 1
@@ -78,6 +79,7 @@ class History(models.Model):
     time = models.DateTimeField(auto_now_add=True)
     duration = models.IntegerField('Duration (minutes)')
 
+
 class Schedule(models.Model):
     circuit = models.ForeignKey(Circuit)
     interval = models.IntegerField('Interval (days)')
@@ -87,6 +89,7 @@ class Schedule(models.Model):
 
     def __unicode__(self):
         return self.circuit.label
+
 
 class Configuration(models.Model):
     price_per_cf = models.DecimalField(max_digits=8, decimal_places=5)

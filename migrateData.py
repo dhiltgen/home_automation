@@ -1,5 +1,4 @@
 import os
-import sys
 import datetime
 import gc
 from multiprocessing import Process
@@ -8,48 +7,49 @@ from pytz import timezone
 pacific = timezone('US/Pacific')
 
 # How many entries to process per transaction
-BUF_SIZE=1024
+BUF_SIZE = 1024
 
 # Set to false if this is a fresh load to speed it up
-DUP_CHECK=True
+DUP_CHECK = True
+
 
 def do_work(name, buf):
     s = Sensor.objects.filter(name=name)[0]
     # Check for dup's - assume they're batched
     if DUP_CHECK:
-        raw_when, value = buf[-1].split(',')
-        when = datetime.datetime.strptime(
-            raw_when, '%Y-%m-%d %H:%M:%S').\
+        raw_ts, value = buf[-1].split(',')
+        ts = datetime.datetime.strptime(
+            raw_ts, '%Y-%m-%d %H:%M:%S').\
             replace(tzinfo=pacific)
         r = Reading.objects.filter(sensor=s,
-                                   when=when,
+                                   ts=ts,
                                    value=value)
         if len(r) == 1:
-            print 'Skipping existing block through:', when
+            print 'Skipping existing block through:', ts
             return
 
     with transaction.commit_on_success():
         for line in buf:
-            raw_when, value = line.split(',')
-            when = datetime.datetime.strptime(
-                raw_when, '%Y-%m-%d %H:%M:%S').\
+            raw_ts, value = line.split(',')
+            ts = datetime.datetime.strptime(
+                raw_ts, '%Y-%m-%d %H:%M:%S').\
                 replace(tzinfo=pacific)
 
             if DUP_CHECK:
                 # Look for existing reading first...
                 r = Reading.objects.filter(sensor=s,
-                                           when=when,
+                                           ts=ts,
                                            value=value)
                 if len(r) == 1:
-                    print 'Skipping existing entry', when
+                    print 'Skipping existing entry', ts
                     continue
-            r = Reading(sensor=s, when=when, value=value)
+            r = Reading(sensor=s, ts=ts, value=value)
             r.save()
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
     from sensor_data.models import Sensor, Reading, Prediction
-    from django.utils.timezone import utc
+    #from django.utils.timezone import utc
     from django.db import transaction
 
     # Hard-coded to import from the legacy sensors DB
@@ -80,21 +80,20 @@ if __name__ == "__main__":
                 p.start()
                 p.join()
 
-
     # NWS predictions are "special"
     with open('migrate_data/nws_predictions.txt', 'r') as readings:
         with transaction.commit_on_success():
             for line in readings:
-                raw_when, min1, min2, min3, min4, min5, min6, min7, \
+                raw_ts, min1, min2, min3, min4, min5, min6, min7, \
                     max1, max2, max3, max4, max5, max6, max7 = line.split(',')
-                when = datetime.datetime.strptime(
-                    raw_when, '%Y-%m-%d %H:%M:%S').replace(tzinfo=pacific)
+                ts = datetime.datetime.strptime(
+                    raw_ts, '%Y-%m-%d %H:%M:%S').replace(tzinfo=pacific)
                 if DUP_CHECK:
-                    r = Prediction.objects.filter(when=when)
+                    r = Prediction.objects.filter(ts=ts)
                     if len(r) == 1:
-                        print 'Skipping existing prediction entry', when
+                        print 'Skipping existing prediction entry', ts
                         continue
-                r = Prediction(when=when,
+                r = Prediction(ts=ts,
                                min1=min1,
                                min2=min2,
                                min3=min3,
@@ -151,7 +150,6 @@ if __name__ == "__main__":
     print 'Loading', name
     sensor_load(filename, name, server, device, subsensor, sensor_type, units)
 
-
     filename = 'rain'
     name = 'Rainfall'
     server = 'sensors:4304'
@@ -161,4 +159,3 @@ if __name__ == "__main__":
     units = 'counter'
     print 'Loading', name
     sensor_load(filename, name, server, device, subsensor, sensor_type, units)
-

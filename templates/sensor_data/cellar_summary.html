@@ -33,7 +33,7 @@
           ['x',  'Low Temps', 'High Temps', 'Low Humidity', 'High Humidity'],
 
     {% for reading in readings %}
-        ["{{ reading.when }}", {{ reading.minimum }}, {{ reading.maximum }}, {{reading.humidity_minimum }}, {{ reading.humidity_maximum }} ],
+        ["{{ reading.day|date:'SHORT_DATE_FORMAT'}}", {{ reading.minimum }}, {{ reading.maximum }}, {{reading.humidity_minimum }}, {{ reading.humidity_maximum }} ],
     {% endfor %}
         ]);
 

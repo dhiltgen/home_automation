@@ -4,28 +4,26 @@
 # Query the national weather service, and record their predictions in the DB
 
 
+from pytz import timezone
 import datetime
 import httplib
-import xml.etree.ElementTree as ET
-from pytz import timezone
-
-lon="-122.11"
-lat="37.40"
-server="graphical.weather.gov"
-url="/xml/sample_products/browser_interface/ndfdXMLclient.php?lat="+lat+"&lon="+lon+"&product=time-series&mint=mint&maxt=maxt"
-
 import os
-import sys
-import datetime
+import xml.etree.ElementTree as ET
+
+lon = "-122.11"
+lat = "37.40"
+server = "graphical.weather.gov"
+url = "/xml/sample_products/browser_interface/ndfdXMLclient.php?lat=" + \
+    lat + "&lon=" + lon + "&product=time-series&mint=mint&maxt=maxt"
+
 
 pacific = timezone('US/Pacific')
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
-    from sensor_data.models import Sensor, Reading, Prediction
-    from django.utils.timezone import utc
+    from sensor_data.models import Prediction
+    #from django.utils.timezone import utc
     from django.db import transaction
-
 
     connection = httplib.HTTPConnection(server)
     connection.request("GET", url)
@@ -33,20 +31,22 @@ if __name__ == "__main__":
     connection.close()
     mins = []
     maxs = []
-    for node in docRoot.findall("./data/parameters/temperature[@type='minimum']/value"):
+    for node in docRoot.findall(
+            "./data/parameters/temperature[@type='minimum']/value"):
         mins.append(node.text)
 
-    for node in docRoot.findall("./data/parameters/temperature[@type='maximum']/value"):
+    for node in docRoot.findall(
+            "./data/parameters/temperature[@type='maximum']/value"):
         maxs.append(node.text)
 
     # Should probably harden to just fill in blanks if it's short...
     assert(len(mins) >= 7)
     assert(len(maxs) >= 7)
 
-    when = datetime.datetime.now().replace(tzinfo=pacific)
+    ts = datetime.datetime.now().replace(tzinfo=pacific)
 
     with transaction.commit_on_success():
-        r = Prediction(when=when,
+        r = Prediction(ts=ts,
                        min1=mins[0],
                        min2=mins[1],
                        min3=mins[2],
@@ -62,4 +62,3 @@ if __name__ == "__main__":
                        max6=maxs[5],
                        max7=maxs[6])
         r.save()
-

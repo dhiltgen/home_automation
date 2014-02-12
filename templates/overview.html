@@ -20,7 +20,7 @@
     {% for sensor in sensors %}
         <tr>
             <td>{{ sensor.metadata.name }}</a></td>
-            <td>{{ sensor.reading.when }}</td>
+            <td>{{ sensor.reading.ts }}</td>
             {% if sensor.metadata.sensor_type != 'R' %}
                 <td>{{ sensor.reading.value|stringformat:".1f" }} {{ sensor.metadata.units }}</td>
             {% else %}
@@ -30,7 +30,7 @@
     {% endfor %}
     <tr>
         <td>Predicted Max Temps</a></td>
-        <td>{{ prediction.when }}</td>
+        <td>{{ prediction.ts }}</td>
         <td>
             {{ prediction.max1|stringformat:".1f" }},
             {{ prediction.max2|stringformat:".1f" }},
@@ -43,7 +43,7 @@
     </tr>
     <tr>
         <td>Predicted Min Temps</a></td>
-        <td>{{ prediction.when }}</td>
+        <td>{{ prediction.ts }}</td>
         <td>
             {{ prediction.min1|stringformat:".1f" }},
             {{ prediction.min2|stringformat:".1f" }},
