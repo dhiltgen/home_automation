@@ -1,17 +1,10 @@
 {% extends "home_automation_base.html" %}
 {% block nav %}
-    <ul class="nav nav-tabs">
-        <li><a href="/">Overview</a></li>
-        <li><a href="/circuits">Sprinklers</a></li>
-        <li><a href="/outside">Outside Temp/Humidity</a></li>
-        <li class="active"><a href="/cellar">Cellar Temp/Humidity</a></li>
-        <li><a href="/rain">Rainfall</a></li>
-    </ul>
-{% endblock %}
-
-{% block body %}
-    <p/>
-    <ul class="nav nav-tabs">
+    <li><a href="/circuits">Sprinklers</a></li>
+    <li><a href="/outside">Outside Temp/Humidity</a></li>
+    <li class="active dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Cellar Temp/Humidity<span class="caret"></span></a>
+        <ul class="dropdown-menu" role="menu">
         <li {% if active_link == "current" %} class="active" {% endif %}>
             <a href="/cellar">Current Readings</a></li>
         <li {% if active_link == "24" %} class="active" {% endif %}>
@@ -24,7 +17,11 @@
             <a href="/cellar/summary/{{year_ago_datetime|urlencode}}_year">Last Year</a></li>
         <li {% if active_link == "ytd" %} class="active" {% endif %}>
             <a href="/cellar/summary/{{year_start_datetime|urlencode}}_ytd">Year to date</a></li>
-    </ul>
+    </ul></li>
+    <li><a href="/rain">Rainfall</a></li>
+{% endblock %}
+
+{% block body %}
 
 
     <div class="row">

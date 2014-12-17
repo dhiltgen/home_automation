@@ -1,17 +1,11 @@
 {% extends "home_automation_base.html" %}
 {% block nav %}
-    <ul class="nav nav-tabs">
-        <li><a href="/">Overview</a></li>
-        <li><a href="/circuits">Sprinklers</a></li>
-        <li><a href="/outside">Outside Temp/Humidity</a></li>
-        <li><a href="/cellar">Cellar Temp/Humidity</a></li>
-        <li class="active"><a href="/rain">Rainfall</a></li>
-    </ul>
-{% endblock %}
-
-{% block body %}
-    <p/>
-    <ul class="nav nav-tabs">
+    <li><a href="/circuits">Sprinklers</a></li>
+    <li><a href="/outside">Outside Temp/Humidity</a></li>
+    <li><a href="/cellar">Cellar Temp/Humidity</a></li>
+    <li class="active dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Rain<span class="caret"></span></a>
+        <ul class="dropdown-menu" role="menu">
         <li {% if active_link == "season" %} class="active" {% endif %}>
             <a href="/rain/{{this_season_start_datetime|urlencode}}_season">This Rainy Season</a></li>
         <li {% if active_link == "24" %} class="active" {% endif %}>
@@ -22,8 +16,11 @@
             <a href="/rain/{{year_ago_datetime|urlencode}}_year">Last Year</a></li>
         <li {% if active_link == "ytd" %} class="active" {% endif %}>
             <a href="/rain/{{year_start_datetime|urlencode}}_ytd">Year to date</a></li>
-    </ul>
+        </ul>
+    </li>
+{% endblock %}
 
+{% block body %}
     {% if readings|length > 0 %}
 
     <script type="text/javascript">
@@ -43,14 +40,16 @@
                         width: 800, height: 500,
                         title: "Cumulative Rainfall",
                         vAxis: {minValue: 0},
-                        hAxis: {format: 'MMM d, y'}
+                        hAxis: {format: 'MMM d, y'},
                        }
                 );
       }
       google.setOnLoadCallback(drawVisualization);
     </script>
     {% endif %}
-    <h2>Last rainfall was {{last_rain}}</h2>
+    <div class="page-header">
+        <h2>Last rainfall was {{last_rain}}</h2>
+    </div>
     Total rainfal in this duration: {{ total }} inches.
     <p/>
     <div class="row">
