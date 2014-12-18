@@ -28,7 +28,8 @@ def main():
                         help="Turn on verbose output")
     args = parser.parse_args()
 
-    now = time.time()
+    # Get UTC epoch time
+    now = time.mktime(time.gmtime(time.time()))
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
