@@ -69,24 +69,14 @@ def get_readings(sensor, t1, t2=None, multiplier=1.0):
     return raw_data
 
 
-def get_range(sensor, t1, t2=None):
+def get_range(raw_data):
     """
-    Given a sensor, retrieve the range of readings over that duration
+    Given a sensor readings, retrieve the range over that duration
 
-    :param sensor: The Sensor object to retrieve readings for
-    :param t1: The "old" DateTime to retrieve
-    :param t2: The optional "new" time to retrieve.  If omitted, all
-               readings from t1 to now will be retrieved
+    :param raw_data: The Sensor readings
     :returns: The delta between t1 and t2's values
     """
-    t1_data = Reading.objects.filter(
-        sensor_id=sensor.id).filter(
-        ts__gt=t1).order_by('ts')[0]
-    if t2 is None:
-        t2_data = Reading.objects.filter(
-            sensor_id=sensor.id).order_by('-ts')[0]
-    else:
-        t2_data = Reading.objects.filter(
-            sensor_id=sensor.id).filter(
-            ts__lt=t2).order_by('-ts')[0]
-    return float(t2_data.value - t1_data.value)
+    try:
+        return float(raw_data[-1].value - raw_data[0].value)
+    except:
+        return float(0.0)

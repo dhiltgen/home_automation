@@ -1,8 +1,8 @@
 {% extends "home_automation_base.html" %}
 {% block nav %}
     <ul class="nav nav-tabs">
-        <li class="active"><a href="/circuits/">Sprinklers</a></li>
-        <li><a href="/outside">Outside Temp/Humidity</a></li>
+        <li><a href="{% url 'circuits' %}">Sprinklers</a></li>
+        <li><a href="{% url 'outside_current' %}">Outside Temp/Humidity</a></li>
         <li><a href="/cellar">Cellar Temp/Humidity</a></li>
         <li><a href="/rain">Rainfall</a></li>
     </ul>

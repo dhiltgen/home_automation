@@ -1,107 +1,104 @@
 #!/usr/bin/python
 
-
-# Monitor a set of sensors and load them into the web app database
-
-
-import datetime
+import argparse
+import glob
+import json
+import logging
 import os
 import subprocess
-import logging
+import sys
+import time
 
 log = logging.getLogger(__name__)
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
-from sensor_data.models import Sensor, Reading
-from sprinklers.models import Circuit
-from django.utils.timezone import utc
 
-sensors = [
-    {
-        'name': 'Outside Humidity',
-        'server': 'sensors:4304',
-        'device': '26.C29821010000',
-        'subsensor': 'humidity'},
-    {
-        'name': 'Outside Temperature',
-        'server': 'sensors:4304',
-        'device': '26.C29821010000',
-        'subsensor': 'temperature'},
-    {
-        'name': 'Cellar Temperature',
-        'server': 'proto:4304',
-        'device': '26.489A21010000',
-        'subsensor': 'temperature'},
-    {
-        'name': 'Cellar Humidity',
-        'server': 'proto:4304',
-        'device': '26.489A21010000',
-        'subsensor': 'humidity'},
-    {
-        'name': 'Rainfall',
-        'server': 'sensors:4304',
-        'device': '1D.3ACA0F000000',
-        'subsensor': 'counters.B'}
-    ]
-
-
-def cycle_sprinklers():
+def main():
     """
-    Iterate through the sprinkler circuits and update as needed
+    Read one or more sensors, queue, and upload to one or more servers.
 
-    This code will check for scheduled starts, and expired durations
-    and start/stop circuits as needed.
+    ssh must be configured to use public key based login (not passwords.)
+    Once the config has been set up, this can be added to crontab with
+    something like "*/5 * * * * /usr/bin/python <this script>"
     """
+    home = os.environ.get('HOME', ".")
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument('--conf', default=home+"/sensors.json",
+                        help="The local json config file for this system")
+    parser.add_argument('--verbose', action="store_true",
+                        help="Turn on verbose output")
+    args = parser.parse_args()
 
-    utcnow = datetime.datetime.utcnow().replace(tzinfo=utc)
-    # First turn anything off that needs to be turned off
-    circuits = Circuit.objects.all()
-    for circuit in circuits:
-        if not circuit.current_state:
-            continue
-        if circuit.last_duration:
-            duration = datetime.timedelta(minutes=circuit.last_duration)
-        else:
-            # Don't let them go more than 90 minutes without a duration
-            duration = datetime.timedelta(minutes=90)
-        if (circuit.last_watered + duration) < utcnow:
-            log.info("Stopping circuit %s", circuit.label)
-            circuit.stop_watering()
-            circuit.save()
-            # Theoretically we should never have multiples running
-            # but we'll continue looping just to be paranoid
-        else:
-            timeleft = utcnow - circuit.last_watered - duration
-            log.debug("Circuit %s still running for %r", circuit.label,
-                      timeleft)
+    now = time.time()
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
-    # Now check to see if we have any circuits that need to be started
-    #TODO
+    if not os.path.exists(args.conf):
+        print 'ERROR: No configuration exists - creating template\n'
+        print 'Please edit %r for your local configuration' % (args.conf)
+        conf = dict(
+            sensors=[
+                dict(
+                    name="Example Sensor Name",
+                    path="/26.489A21010000/temperature",
+                ),
+            ],
+            servers=[
+                dict(
+                    port="22",
+                    host="servername",
+                    local_queue="/path/to/local/queue",
+                    remote_queue="/path/to/remote/queue",
+                ),
+            ],
+        )
+        with open(args.conf, "w") as fd:
+            fd.write(json.dumps(conf,
+                                sort_keys=True,
+                                indent=4, separators=(',', ': ')))
+
+        sys.exit(1)
+
+    with open(args.conf, "r") as fd:
+        conf = json.loads(fd.read())
+
+    # Gather the readings...
+    for sensor in conf['sensors']:
+        sensor['val'] = str(subprocess.check_output([
+            'owread', '-F', sensor['path']])).strip()
+        log.debug("Sensor %r current reading %r", sensor['name'],
+                  sensor['val'])
+
+    # Now update each servers queues
+    for server in conf['servers']:
+        if not os.path.exists(server['local_queue']):
+            os.makedirs(server['local_queue'])
+        for sensor in conf['sensors']:
+            filename = server['local_queue'] + '/%d.%s' % (
+                int(now), sensor['name'])
+            with open(filename, "w") as reading:
+                reading.write(str(sensor['val']))
+
+    # And finally drain the queues
+    for server in conf['servers']:
+        # Clearly not as efficient as bulk upload, but
+        # by doing one at a time we simplify keeping
+        # everything in sync
+        for reading_filename in glob.glob(server['local_queue'] + "/*"):
+            try:
+                output = subprocess.check_output([
+                    "scp", "-P", str(server['port']),
+                    reading_filename,
+                    "%s:%s/" % (server['host'], server['remote_queue'])])
+                if output:
+                    log.info(output)
+                os.unlink(reading_filename)
+            except subprocess.CalledProcessError as e:
+                log.warning("Failed to upload %r - %s", reading_filename,
+                            e.output)
+                log.warning("Will try again later")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-
-    dt = datetime.datetime.utcnow().replace(tzinfo=utc)
-
-    cycle_sprinklers()
-
-    for sensor in sensors:
-        try:
-            res = Sensor.objects.filter(server=sensor['server'],
-                                        device=sensor['device'],
-                                        subsensor=sensor['subsensor'])
-            if len(res) == 1:
-                s = res[0]
-            else:
-                raise Exception("Failed to find existing sensor definition")
-
-            val = str(subprocess.check_output([
-                'owread', '-s', sensor['server'], '-F',
-                '/'+sensor['device']+'/'+sensor['subsensor']])).strip()
-            print sensor['name'], val
-            r = Reading(sensor=s, ts=dt, value=val)
-            r.save()
-
-        except Exception as e:
-            print 'Failed to insert data',  sensor['name'], e
+    main()

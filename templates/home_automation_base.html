@@ -33,10 +33,54 @@
     <ul class="nav navbar-nav">
     {% block nav %}
 
-        <li><a href="/circuits/">Sprinklers</a></li>
-        <li><a href="/sensors/">Outside Temp</a></li>
-        <li><a href="/cellar/">Cellar Temp/Humidity</a></li>
-        <li><a href="/rain/">Rainfall</a></li>
+    <li><a href="{% url 'circuits' %}">Sprinklers</a></li>
+    <li class="{% if group == "outside" %}active {% endif %}dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Outside Temp/Humidity<span class="caret"></span></a>
+        <ul class="dropdown-menu" role="menu">
+        <li {% if group == "outside" and active_link == "current" %} class="active" {% endif %}>
+            <a href="{% url 'outside_current' %}">Current Readings</a></li>
+        <li {% if group == "outside" and active_link == "24" %} class="active" {% endif %}>
+            <a href="{% url 'outside_detail' 1 %}">Last 24 hours</a></li>
+        <li {% if group == "outside" and active_link == "48" %} class="active" {% endif %}>
+            <a href="{% url 'outside_detail' 2 %}">Last 48 hours</a></li>
+        <li {% if group == "outside" and active_link == "week" %} class="active" {% endif %}>
+            <a href="{% url 'outside_detail' 7 %}">Last Week</a></li>
+        <li {% if group == "outside" and active_link == "year" %} class="active" {% endif %}>
+            <a href="{% url 'outside_summary' 365 %}">Last Year</a></li>
+        <li {% if group == "outside" and active_link == "ytd" %} class="active" {% endif %}>
+            <a href="{% url 'outside_ytd' %}">Year to date</a></li>
+    </ul></li>
+    <li class="{% if group == "cellar" %}active {% endif %}dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Cellar Temp/Humidity<span class="caret"></span></a>
+        <ul class="dropdown-menu" role="menu">
+        <li {% if group == "cellar" and active_link == "current" %} class="active" {% endif %}>
+            <a href="{% url 'cellar_current' %}">Current Readings</a></li>
+        <li {% if group == "cellar" and active_link == "24" %} class="active" {% endif %}>
+            <a href="{% url 'cellar_detail' 1 %}">Last 24 hours</a></li>
+        <li {% if group == "cellar" and active_link == "48" %} class="active" {% endif %}>
+            <a href="{% url 'cellar_detail' 2 %}">Last 48 hours</a></li>
+        <li {% if group == "cellar" and active_link == "week" %} class="active" {% endif %}>
+            <a href="{% url 'cellar_detail' 7 %}">Last Week</a></li>
+        <li {% if group == "cellar" and active_link == "year" %} class="active" {% endif %}>
+            <a href="{% url 'cellar_summary' 365 %}">Last Year</a></li>
+        <li {% if group == "cellar" and active_link == "ytd" %} class="active" {% endif %}>
+            <a href="{% url 'cellar_ytd' %}">Year to date</a></li>
+    </ul></li>
+    <li class="{% if group == "rain" %}active {% endif %}dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Rainfall<span class="caret"></span></a>
+        <ul class="dropdown-menu" role="menu">
+        <li {% if group == "rain" and active_link == "season" %} class="active" {% endif %}>
+            <a href="{% url 'rain_season' %}">This Rainy Season</a></li>
+        <li {% if group == "rain" and active_link == "24" %} class="active" {% endif %}>
+            <a href="{% url 'rain_details' 1 %}">Last 24 hours</a></li>
+        <li {% if group == "rain" and active_link == "week" %} class="active" {% endif %}>
+            <a href="{% url 'rain_details' 7 %}">Last Week</a></li>
+        <li {% if group == "rain" and active_link == "year" %} class="active" {% endif %}>
+            <a href="{% url 'rain_details' 365 %}">Last Year</a></li>
+        <li {% if group == "rain" and active_link == "ytd" %} class="active" {% endif %}>
+            <a href="{% url 'rain_ytd' %}">Year To Date</a></li>
+        </ul>
+    </li>
 
     {% endblock %}
     </ul>

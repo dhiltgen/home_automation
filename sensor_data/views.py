@@ -7,6 +7,11 @@ from sensor_data.models import Sensor, Reading, Prediction
 from datetime import datetime, timedelta
 from sensor_data import cumulative
 
+def get_start_of_year():
+    now = datetime.utcnow().replace(tzinfo=utc)
+    now_year = now.year
+    return datetime(int(now_year), 1, 1).replace(tzinfo=utc)
+
 def get_humidty_and_temp_sensors(name):
     humidity = Sensor.objects.filter(name=name + " Humidity")[0]
     temp = Sensor.objects.filter(name=name + " Temperature")[0]
@@ -94,17 +99,18 @@ def prior_min_max(offset, sensor):
 def outside_current(request):
     (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Outside')
     return generic_current(request, 'sensor_data/outside_current.html',
-                           humidity_sensor, temp_sensor)
+                           humidity_sensor, temp_sensor, "outside")
 
 
 def cellar_current(request):
     (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Cellar')
     return generic_current(request, 'sensor_data/cellar_current.html',
-                           humidity_sensor, temp_sensor)
+                           humidity_sensor, temp_sensor, "cellar")
 
 
-def generic_current(request, template, humidity_sensor, temp_sensor):
+def generic_current(request, template, humidity_sensor, temp_sensor, group):
     results = prime_results(request, humidity_sensor, temp_sensor)
+    results['group'] = group
     results['active_link'] = 'current'
 
     results['prediction'] = Prediction.objects.latest('ts')
@@ -142,36 +148,35 @@ def generic_current(request, template, humidity_sensor, temp_sensor):
     return render_to_response(template, results)
 
 
-def outside_summary(request, start_year, start_month, start_day,
-                   start_hour, start_minute, start_second,
-                   tz_hour, tz_minute, active_link=None):
+def outside_summary(request, days=None):
     (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Outside')
     return generic_summary(request, 'sensor_data/outside_summary.html',
-                           humidity_sensor, temp_sensor,
-                           start_year, start_month, start_day,
-                           start_hour, start_minute, start_second,
-                           tz_hour, tz_minute, active_link)
+                           humidity_sensor, temp_sensor, "outside", days)
 
 
-def cellar_summary(request, start_year, start_month, start_day,
-                   start_hour, start_minute, start_second,
-                   tz_hour, tz_minute, active_link=None):
+def cellar_summary(request, days=None):
     (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Cellar')
     return generic_summary(request, 'sensor_data/cellar_summary.html',
-                           humidity_sensor, temp_sensor,
-                           start_year, start_month, start_day,
-                           start_hour, start_minute, start_second,
-                           tz_hour, tz_minute, active_link)
+                           humidity_sensor, temp_sensor, "cellar", days)
 
 
-def generic_summary(request, template, humidity_sensor, temp_sensor,
-                    start_year, start_month, start_day,
-                    start_hour, start_minute, start_second,
-                    tz_hour, tz_minute, active_link=None):
+def generic_summary(request, template, humidity_sensor, temp_sensor, group, days):
     results = prime_results(request, humidity_sensor, temp_sensor)
-    start = datetime(int(start_year), int(start_month), int(start_day),
-                     int(start_hour), int(start_minute),
-                     int(float(start_second)), 0).replace(tzinfo=utc)
+    results['group'] = group
+    if days:
+        days = int(days)
+        start = datetime.utcnow().replace(tzinfo=utc) - timedelta(days)
+        if days == 1:
+            active_link = '24'
+        elif days == 2:
+            active_link = '48'
+        elif days <= 7:
+            active_link = 'week'
+        elif days > 7:
+            active_link = 'year'
+    else:
+        start = get_start_of_year()
+        active_link = 'ytd'
 
     results['active_link'] = active_link
 
@@ -216,36 +221,31 @@ def generic_summary(request, template, humidity_sensor, temp_sensor,
     return render_to_response(template, results)
 
 
-def outside_detail(request, start_year, start_month, start_day,
-                   start_hour, start_minute, start_second,
-                   tz_hour, tz_minute, active_link=None):
+def outside_detail(request, days):
     (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Outside')
     return generic_detail(request, 'sensor_data/outside_detail.html',
-                          humidity_sensor, temp_sensor,
-                          start_year, start_month, start_day,
-                          start_hour, start_minute, start_second,
-                          tz_hour, tz_minute, active_link)
+                          humidity_sensor, temp_sensor, "outside", days)
 
 
-def cellar_detail(request, start_year, start_month, start_day,
-                   start_hour, start_minute, start_second,
-                   tz_hour, tz_minute, active_link=None):
+def cellar_detail(request, days):
     (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Cellar')
     return generic_detail(request, 'sensor_data/cellar_detail.html',
-                          humidity_sensor, temp_sensor,
-                          start_year, start_month, start_day,
-                          start_hour, start_minute, start_second,
-                          tz_hour, tz_minute, active_link)
+                          humidity_sensor, temp_sensor, "cellar", days)
 
 
-def generic_detail(request, template, humidity_sensor, temp_sensor,
-                   start_year, start_month, start_day,
-                   start_hour, start_minute, start_second,
-                   tz_hour, tz_minute, active_link=None):
+def generic_detail(request, template, humidity_sensor, temp_sensor, group, days):
     results = prime_results(request, humidity_sensor, temp_sensor)
-    start = datetime(int(start_year), int(start_month), int(start_day),
-                     int(start_hour), int(start_minute),
-                     int(float(start_second)), 0).replace(tzinfo=utc)
+    results['group'] = group
+    days = int(days)
+    start = datetime.utcnow().replace(tzinfo=utc) - timedelta(days)
+    if days == 1:
+        active_link = '24'
+    elif days == 2:
+        active_link = '48'
+    elif days <= 7:
+        active_link = 'week'
+    elif days > 7:
+        active_link = 'year'
     results['active_link'] = active_link
     raw_temps = [x for x in Reading.objects.filter(
         sensor_id=temp_sensor.id, ts__gt=start).order_by('-ts')]
@@ -269,34 +269,43 @@ def generic_detail(request, template, humidity_sensor, temp_sensor,
     return render_to_response(template, results)
 
 
-def rain_data(request, start_year=None, start_month=None,
-              start_day=None, start_hour=None, start_minute=None,
-              start_second=None, tz_hour=None, tz_minute=None,
-              active_link=None):
+def rain_ytd(request):
+    return rain_common(request, get_start_of_year(), "ytd")
+
+
+def rain_data(request, days=None):
+    if days:
+        days = int(days)
+        start = datetime.utcnow().replace(tzinfo=utc) - timedelta(days)
+        if days == 1:
+            active_link = '24'
+        elif days <= 7:
+            active_link = 'week'
+        elif days > 7:
+            active_link = 'year'
+    else:
+        active_link = "season"
+        now = datetime.utcnow().replace(tzinfo=utc)
+        now_year = now.year
+        now_month = now.month
+        rain_season_month_start = 7
+        if now_month < rain_season_month_start:
+            start = datetime(year=now_year - 1,
+                             month=rain_season_month_start,
+                             day=1, tzinfo=utc)
+        else:
+            start = datetime(year=now_year,
+                             month=rain_season_month_start,
+                             day=1, tzinfo=utc)
+
+    return rain_common(request, start, active_link)
+
+
+def rain_common(request, start, active_link):
     sensor = Sensor.objects.filter(name='Rainfall')[0]
     results = common_prime_results(request, sensor)
+    results['group'] = "rain"
 
-    # Some useful intervals for rain data:
-    now = datetime.utcnow().replace(tzinfo=utc)
-    now_year = now.year
-    now_month = now.month
-    rain_season_month_start = 7
-    if now_month < rain_season_month_start:
-        this_season_start = datetime(year=now_year - 1,
-                                     month=rain_season_month_start,
-                                     day=1, tzinfo=utc)
-    else:
-        this_season_start = datetime(year=now_year,
-                                     month=rain_season_month_start,
-                                     day=1, tzinfo=utc)
-    results['this_season_start_datetime'] = this_season_start
-
-    if start_year:
-        start = datetime(int(start_year), int(start_month),
-                         int(start_day)).replace(tzinfo=utc)
-    else:
-        start = this_season_start
-        active_link = "season"
     results['active_link'] = active_link
     """
     select distinct on (value) id, value, ts
@@ -305,7 +314,7 @@ def rain_data(request, start_year=None, start_month=None,
     order by value, ts asc;
     """
     raw_data = cumulative.get_readings(sensor, start, None, 0.01)
-    total = cumulative.get_range(sensor, start, None) * 0.01
+    total = cumulative.get_range(raw_data)
     results['total'] = total
 
     if len(raw_data) == 1:

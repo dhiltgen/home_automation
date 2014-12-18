@@ -12,70 +12,47 @@ detect_current_state()
 
 urlpatterns = patterns('',
     url(r'^$', 'sprinklers.views.summary', name='overview'),
+
     url(r'^circuits/$',
         ListView.as_view(
         queryset=Circuit.objects.order_by('label'),
         context_object_name='circuits',  # Default would be poll_list
-        template_name='sprinklers/index.html')),
+        template_name='sprinklers/index.html'),
+        name='circuits'),
     url(r'^circuits/(?P<pk>\d+)/$',
         DetailView.as_view(
         model=Circuit,
         template_name='sprinklers/detail.html'),
         name='circuit_details'),
     url(r'^circuits/(?P<circuit_id>\d+)/update/$', 'sprinklers.views.update'),
+
     url(r'^outside$', 'sensor_data.views.outside_current', name='outside_current'),
     url(r'^outside/detail/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)_(?P<active_link>\S+)$',
-        'sensor_data.views.outside_detail', name='outside_detail'),
-    url(r'^outside/detail/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$',
+        '(?P<days>\d+)$',
         'sensor_data.views.outside_detail', name='outside_detail'),
     url(r'^outside/summary/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)_(?P<active_link>\S+)$',
+        '(?P<days>\d+)$',
         'sensor_data.views.outside_summary', name='outside_summary'),
-    url(r'^outside/summary/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$',
-        'sensor_data.views.outside_summary', name='outside_summary'),
+    url(r'^outside/ytd/$',
+        'sensor_data.views.outside_summary', name='outside_ytd'),
+
     url(r'^cellar$', 'sensor_data.views.cellar_current', name='cellar_current'),
     url(r'^cellar/detail/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)_(?P<active_link>\S+)$',
-        'sensor_data.views.cellar_detail', name='cellar_detail'),
-    url(r'^cellar/detail/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$',
+        '(?P<days>\d+)$',
         'sensor_data.views.cellar_detail', name='cellar_detail'),
     url(r'^cellar/summary/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)_(?P<active_link>\S+)$',
+        '(?P<days>\d+)$',
         'sensor_data.views.cellar_summary', name='cellar_summary'),
-    url(r'^cellar/summary/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$',
-        'sensor_data.views.cellar_summary', name='cellar_summary'),
-    url(r'^rain$', 'sensor_data.views.rain_data', name='rain_data'),
+    url(r'^cellar/ytd/$',
+        'sensor_data.views.cellar_summary', name='cellar_ytd'),
+
+    url(r'^rain$', 'sensor_data.views.rain_data', name='rain_summary'),
+    url(r'^rain/season/$', 'sensor_data.views.rain_data', name='rain_season'),
     url(r'^rain/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)$',
-        'sensor_data.views.rain_data', name='rain_data'),
-    url(r'^rain/'
-        '(?P<start_year>\d\d\d\d)-(?P<start_month>\d\d)-(?P<start_day>\d\d) '
-        '(?P<start_hour>\d\d):(?P<start_minute>\d\d):(?P<start_second>\d+(\.\d*)?)\+'
-        '(?P<tz_hour>\d\d):(?P<tz_minute>\d\d)_(?P<active_link>\S+)$',
-        'sensor_data.views.rain_data', name='rain_data'),
+        '(?P<days>\d+)$',
+        'sensor_data.views.rain_data', name='rain_details'),
+    url(r'^rain/ytd/$',
+        'sensor_data.views.rain_ytd', name='rain_ytd'),
 )
 urlpatterns += patterns('',
     url(r'^admin/', include(admin.site.urls)),
