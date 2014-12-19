@@ -24,6 +24,7 @@ def normalize(data_range, multiplier=1.0):
     """
     base_value = data_range[0].value
     for i in range(len(data_range)):
+        data_range[i].raw_value = data_range[i].value
         data_range[i].value = (float(data_range[i].value - base_value)) * multiplier
 
 

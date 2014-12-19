@@ -311,7 +311,11 @@ def rain_common(request, start, active_link):
         results['last_rain'] = 'NA in this interval'
         return render_to_response('sensor_data/rain.html', results)
 
-    last_rain = datetime.utcnow().replace(tzinfo=utc) - raw_data[-1].ts
+    # Get the first occurrence of the latest reading (time of last rain)
+    last_bump = Reading.objects.filter(
+        sensor_id=sensor.id).filter(
+        value=raw_data[-1].raw_value).earliest('ts')
+    last_rain = datetime.utcnow().replace(tzinfo=utc) - last_bump.ts
     if last_rain.days:
         results['last_rain'] = '%d days %d hours ago' \
             % (last_rain.days, last_rain.seconds/(60*60))
