@@ -44,8 +44,11 @@ def summary(request):
                 sensor_id=sensor.id).filter(ts__gt=start)[0]
             latest = Reading.objects.filter(
                 sensor_id=sensor.id).latest('ts')
-            latest.value = float(latest.value - old.value) * 0.01
-            sensors.append(dict(metadata=sensor, reading=latest))
+            last_bump = Reading.objects.filter(
+                sensor_id=sensor.id).filter(
+                value=latest.value).earliest('ts')
+            last_bump.value = float(latest.value - old.value) * 0.01
+            sensors.append(dict(metadata=sensor, reading=last_bump))
         else:
             if 'fahrenheit' in sensor.units:
                 sensor.units = u"\xb0F"
