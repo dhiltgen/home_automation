@@ -5,6 +5,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.core.urlresolvers import reverse
 from sprinklers.models import Circuit
 from sensor_data.models import Sensor, Reading, Prediction
+import sensor_data.cumulative as cumulative
 
 
 #def index(request):
@@ -37,13 +38,19 @@ def summary(request):
     sensors = []
     for sensor in Sensor.objects.all().order_by('name'):
         if sensor.sensor_type == 'R':
-            # Is there a better way to do this?
+            sensor.units = ' inches (this season)'
+            start = cumulative.get_season_start()
+            old = Reading.objects.order_by('ts').filter(
+                sensor_id=sensor.id).filter(ts__gt=start)[0]
             latest = Reading.objects.filter(
                 sensor_id=sensor.id).latest('ts')
-            last_fall = Reading.objects.filter(
-                value=latest.value).order_by('ts')[0]
-            sensors.append(dict(metadata=sensor, reading=last_fall))
+            latest.value = float(latest.value - old.value) * 0.01
+            sensors.append(dict(metadata=sensor, reading=latest))
         else:
+            if 'fahrenheit' in sensor.units:
+                sensor.units = u"\xb0F"
+            elif 'percent' in sensor.units:
+                sensor.units = "%"
             sensors.append(dict(
                 metadata=sensor, reading=Reading.objects.filter(
                     sensor_id=sensor.id).latest('ts')))

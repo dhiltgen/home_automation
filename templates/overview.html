@@ -11,11 +11,7 @@
         <tr>
             <td>{{ sensor.metadata.name }}</a></td>
             <td>{{ sensor.reading.ts }}</td>
-            {% if sensor.metadata.sensor_type != 'R' %}
-                <td>{{ sensor.reading.value|stringformat:".1f" }} {{ sensor.metadata.units }}</td>
-            {% else %}
-                <td></td>
-            {% endif %}
+            <td>{{ sensor.reading.value|stringformat:".1f" }}{{ sensor.metadata.units }}</td>
         </tr>
     {% endfor %}
     <tr>

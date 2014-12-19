@@ -80,3 +80,19 @@ def get_range(raw_data):
         return float(raw_data[-1].value - raw_data[0].value)
     except:
         return float(0.0)
+
+
+# TODO - This belongs in a separate "rain" module
+def get_season_start():
+    now = datetime.utcnow().replace(tzinfo=utc)
+    now_year = now.year
+    now_month = now.month
+    rain_season_month_start = 7
+    if now_month < rain_season_month_start:
+        return datetime(year=now_year - 1,
+                        month=rain_season_month_start,
+                        day=1, tzinfo=utc)
+    else:
+        return datetime(year=now_year,
+                        month=rain_season_month_start,
+                        day=1, tzinfo=utc)

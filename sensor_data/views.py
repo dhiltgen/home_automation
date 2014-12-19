@@ -285,18 +285,7 @@ def rain_data(request, days=None):
             active_link = 'year'
     else:
         active_link = "season"
-        now = datetime.utcnow().replace(tzinfo=utc)
-        now_year = now.year
-        now_month = now.month
-        rain_season_month_start = 7
-        if now_month < rain_season_month_start:
-            start = datetime(year=now_year - 1,
-                             month=rain_season_month_start,
-                             day=1, tzinfo=utc)
-        else:
-            start = datetime(year=now_year,
-                             month=rain_season_month_start,
-                             day=1, tzinfo=utc)
+        start = cumulative.get_season_start()
 
     return rain_common(request, start, active_link)
 
