@@ -51,30 +51,31 @@ def prior_temp(offset, temp_sensor):
     """
     Find the temp readings for this time over the last few days
 
-    :param count: The number of days ago to retrieve
+    :param offset: The number of days ago to retrieve
     :returns: The reading or None
     """
     try:
         res = Reading.objects.raw(
-            'select * from sensor_data_reading where '
-            'ts >= subtime(utc_timestamp(), "%d:06:00.0") and '
-            'ts <= subtime(utc_timestamp(), "%d:00:00.0") and '
-            'sensor_id="%s" order by ts desc limit 1'
-            % (offset*24, offset*24, temp_sensor.id))[0]
+            "select * from sensor_data_reading where "
+            "ts >= (now() - interval '%d hours') and "
+            "ts <= (now() - interval '%d hours') and "
+            "sensor_id=%s order by ts desc limit 1"
+            % (offset*24+6, offset*24, temp_sensor.id))[0]
         return res
     except:
-        print 'No prior temp for', offset
+        print 'No prior temp for', offset, temp_sensor.id
         return None
 
 
 def prior_prediction(offset):
     try:
         res = Prediction.objects.raw(
-            'select * from sensor_data_prediction where '
-            'ts <= subdate(utc_date(), "%d") and '
-            'ts >= subdate(utc_date(), "%d") '
-            'order by ts desc limit 1' %
-            (offset + 1, (offset + 2)))[0]
+            "select * from sensor_data_prediction where "
+            "ts <= (current_date - interval '%d days') and "
+            "ts >= (current_date - interval '%d days') "
+            "order by ts desc limit 1" %
+            (offset, (offset + 1)))[0]
+        print offset, res.__dict__
         return res
     except:
         print 'No prior prediction for', offset
@@ -84,15 +85,17 @@ def prior_prediction(offset):
 def prior_min_max(offset, sensor):
     try:
         reading = Reading.objects.raw(
-            'select cast(ts as date), min(value) as minimum, '
-            'max(value) as maximum, id, sensor_id '
-            'from sensor_data_reading where sensor_id="%s" and '
-            'ts <= subdate(utc_date(), "%d") and '
-            'ts >= subdate(utc_date(), "%d") '
-            "group by 1 order by 1 desc limit 1" %
+            "select min(id) as id, date_trunc('day', ts) as day, min(value) as minimum, max(value) as maximum "
+            "from sensor_data_reading "
+            "where sensor_id=%d and "
+            "ts <=  (current_date - interval '%d days') and "
+            "ts >= (current_date - interval '%d days') "
+            "group by date_trunc('day', ts) "
+            "order by date_trunc('day', ts) desc;" %
             (sensor.id, offset, (offset + 1)))[0]
         return (reading.minimum, reading.maximum)
-    except:
+    except Exception as e:
+        print 'Failed to lookup prior min/max', e
         return ("NA", "NA")
 
 
