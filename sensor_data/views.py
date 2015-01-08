@@ -7,6 +7,12 @@ from sensor_data.models import Sensor, Reading, Prediction
 from datetime import datetime, timedelta
 from sensor_data import cumulative
 
+
+# TODO
+#  A bunch of this should be generalized with some common
+#  view classes
+
+
 def get_start_of_year():
     now = datetime.utcnow().replace(tzinfo=utc)
     now_year = now.year
