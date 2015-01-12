@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# Copyright (c) 2013-2015 Daniel Hiltgen
+
+#
+# TODO - Get rid of this and load this from
+#        some sort of configuration file
+#
+
 import os
 
 data = [
@@ -29,8 +37,8 @@ if __name__ == "__main__":
     from sprinklers.models import Circuit
 
     for d in data:
-       try:
-           old = Circuit.objects.filter(path=d[1])[0]
+        try:
+            old = Circuit.objects.filter(path=d[1])[0]
             print 'Updating', d[0]
             old.label = d[0]
             old.save()

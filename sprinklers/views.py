@@ -12,17 +12,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-#def index(request):
-#    circuits = Circuit.objects.all().order_by('label')
-#    return render_to_response('sprinklers/index.html',
-#                              { 'circuits': circuits })
-
-
-#def details(request, circuit_id):
-#    c = get_object_or_404(Circuit, pk=circuit_id)
-#    return render_to_response('sprinklers/detail.html', { 'circuit': c },
-#                              context_instance=RequestContext(request))
-
 def update(request, circuit_id):
     c = get_object_or_404(Circuit, pk=circuit_id)
     print 'XXX POST details:', request.POST

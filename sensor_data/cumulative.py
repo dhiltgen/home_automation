@@ -1,7 +1,9 @@
-#
+# Copyright (c) 2015 Daniel Hiltgen
+
+
 from django.utils.timezone import utc
-from datetime import datetime, timedelta
-from sensor_data.models import Sensor, Reading, Prediction
+from datetime import datetime
+from sensor_data.models import Reading
 
 
 """
@@ -19,13 +21,14 @@ def normalize(data_range, multiplier=1.0):
     will show their delta from the first value
 
     :param data_range: list of Readings, with offset [0] as the initial value
-    :param multiplier: Optional value to multiply all values by (e.g., converting
-                       counters to some well known units)
+    :param multiplier: Optional value to multiply all values by
+                       (e.g., converting counters to some well known units)
     """
     base_value = data_range[0].value
     for i in range(len(data_range)):
         data_range[i].raw_value = data_range[i].value
-        data_range[i].value = (float(data_range[i].value - base_value)) * multiplier
+        data_range[i].value = (float(data_range[i].value - base_value)) * \
+            multiplier
 
 
 def get_readings(sensor, t1, t2=None, multiplier=1.0):
@@ -47,8 +50,7 @@ def get_readings(sensor, t1, t2=None, multiplier=1.0):
             "ts >= to_timestamp('%s', 'YYYY-MM-DD') "
             "order by value, ts asc; " %
             (sensor.id,
-             t1.strftime('%Y-%m-%d'),
-            ))]
+             t1.strftime('%Y-%m-%d')))]
         # Append the very latest reading for completeness in the graph.
         last = Reading.objects.filter(
             sensor_id=sensor.id).order_by('-ts')[:1]
@@ -63,8 +65,7 @@ def get_readings(sensor, t1, t2=None, multiplier=1.0):
             "order by value, ts asc; " %
             (sensor.id,
              t1.strftime('%Y-%m-%d'),
-             t2.strftime('%Y-%m-%d'),
-            ))]
+             t2.strftime('%Y-%m-%d')))]
 
     normalize(raw_data, multiplier)
     return raw_data

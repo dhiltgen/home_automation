@@ -29,7 +29,8 @@ def main():
     parser.add_argument('--verbose', action="store_true",
                         help="Crank up the logging")
     parser.add_argument('--dry-run', action="store_true",
-                        help="Don't actually the queue, just show what would happen")
+                        help="Don't actually the queue, just show what "
+                        "would happen")
     parser.add_argument('--queue', required=True,
                         help="The queue directory")
     # TODO - Add arguments to tweak the timezone which we interpret
@@ -47,7 +48,8 @@ def main():
         m = re.search(r'(\d+)\.(.+)', filename)
         assert m, "Filename %r didn't match expected pattern" % (filename)
         # We assume the readings are reported with UTC Epoch times
-        dt = datetime.datetime.fromtimestamp(int(m.group(1))).replace(tzinfo=utc)
+        dt = datetime.datetime.fromtimestamp(int(m.group(1))).replace(
+            tzinfo=utc)
         with open(filename, 'r') as fd:
             try:
                 raw_val = fd.read().strip()

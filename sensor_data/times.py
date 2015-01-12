@@ -1,5 +1,7 @@
-#
+# Copyright (c) 2015 Daniel Hiltgen
+
 from datetime import datetime, timedelta
+from django.utils.timezone import utc
 
 
 """
@@ -8,6 +10,7 @@ Utility routines for getting common DateTimes
 _week = timedelta(weeks=1)
 _year = timedelta(weeks=52)
 _day = timedelta(days=1)
+
 
 def day_ago(t1=None):
     """
@@ -18,6 +21,7 @@ def day_ago(t1=None):
         t1 = datetime.utcnow().replace(tzinfo=utc)
     return t1 - _day
 
+
 def week_ago(t1=None):
     """
     :param t1: The starting DateTime (omit for Now)
@@ -27,6 +31,7 @@ def week_ago(t1=None):
         t1 = datetime.utcnow().replace(tzinfo=utc)
     return t1 - _week
 
+
 def year_ago(t1=None):
     """
     :param t1: The starting DateTime (omit for Now)
@@ -35,4 +40,3 @@ def year_ago(t1=None):
     if t1 is None:
         t1 = datetime.utcnow().replace(tzinfo=utc)
     return t1 - _year
-

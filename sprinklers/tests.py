@@ -18,3 +18,4 @@ class SprinklerViewTest(TestCase):
         assert 'prediction' in response.context
         assert '<title>Home Automation</title>' in response.content
 
+    # TODO - Add some more tests for manipulating individual sprinklers

@@ -1,3 +1,4 @@
+# Copyright (c) 2013-2015 Daniel Hiltgen
 from django.db import models
 
 
@@ -46,3 +47,10 @@ class Prediction(models.Model):
     max5 = models.DecimalField(max_digits=10, decimal_places=4, blank=False)
     max6 = models.DecimalField(max_digits=10, decimal_places=4, blank=False)
     max7 = models.DecimalField(max_digits=10, decimal_places=4, blank=False)
+
+    def __str__(self):
+        return "Predictions - min:%r max%r" % (
+            (self.min1, self.min2, self.min3, self.min4,
+             self.min5, self.min6, self.min7),
+            (self.max1, self.max2, self.max3, self.max4,
+             self.max5, self.max6, self.max7))

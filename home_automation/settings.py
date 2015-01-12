@@ -1,4 +1,9 @@
+# Copyright (c) 2015 Daniel Hiltgen
+
 # Django settings for home_automation project.
+#
+# The "interesting" settings live in local_settings.py
+#
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -13,12 +18,12 @@ import home_automation.local_settings as local_settings
 
 DATABASES = {
     'default': {
-        'ENGINE': local_settings.db_backend, # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': local_settings.db_name,                      # Or path to database file if using sqlite3.
-        'USER': local_settings.db_user,                      # Not used with sqlite3.
-        'PASSWORD': local_settings.db_password,                  # Not used with sqlite3.
-        'HOST': local_settings.db_host,                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': local_settings.db_backend,
+        'NAME': local_settings.db_name,
+        'USER': local_settings.db_user,
+        'PASSWORD': local_settings.db_password,
+        'HOST': local_settings.db_host,
+        'PORT': '',
     }
 }
 
@@ -80,7 +85,7 @@ STATICFILES_DIRS = (
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+    # 'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
 # Make this unique, and don't share it with anybody.
@@ -90,7 +95,7 @@ SECRET_KEY = 'w7)3&amp;d@1ke&amp;2es5(7)+u%u(ujqt!*-6gow_1he)8u%_#r(-^7u'
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
+    # 'django.template.loaders.eggs.Loader',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -111,7 +116,8 @@ WSGI_APPLICATION = 'home_automation.wsgi.application'
 import os
 PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+    # Put strings here, like "/home/html/django_templates" or
+    # "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     PROJECT_PATH + '/../templates/'

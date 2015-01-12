@@ -16,6 +16,8 @@ TODO
 * More sprinkler smarts
 * Consolidate old historical readings to high/low for each day to
   improve performance on low-power systems like RasberryPIs
+* Convert initial bootstrap logic from hard-coded scripts to
+  configuration driven
 
 
 # Wipe old data

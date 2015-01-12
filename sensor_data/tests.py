@@ -3,7 +3,7 @@
 from django.test import TestCase
 from django.test import Client
 from django.test.utils import setup_test_environment
-from sensor_data.models import Sensor, Reading, Prediction
+from sensor_data.models import Sensor, Reading
 from datetime import datetime
 from django.utils.timezone import utc
 
@@ -68,7 +68,6 @@ class SensorViewTest(TestCase):
         Reading(sensor=rs,
                 ts=now,
                 value=5.0).save()
-
 
     def test_outside(self):
         response = self.client.get('/outside')
