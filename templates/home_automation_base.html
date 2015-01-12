@@ -75,8 +75,12 @@
             <a href="{% url 'rain_details' 1 %}">Last 24 hours</a></li>
         <li {% if group == "rain" and active_link == "week" %} class="active" {% endif %}>
             <a href="{% url 'rain_details' 7 %}">Last Week</a></li>
-        <li {% if group == "rain" and active_link == "year" %} class="active" {% endif %}>
-            <a href="{% url 'rain_details' 365 %}">Last Year</a></li>
+        <li {% if group == "rain" and active_link == "30d" %} class="active" {% endif %}>
+            <a href="{% url 'rain_details' 30 %}">Last 30 Days</a></li>
+        <li {% if group == "rain" and active_link == "60d" %} class="active" {% endif %}>
+            <a href="{% url 'rain_details' 60 %}">Last 60 Days</a></li>
+        <li {% if group == "rain" and active_link == "90d" %} class="active" {% endif %}>
+            <a href="{% url 'rain_details' 90 %}">Last 90 Days</a></li>
         <li {% if group == "rain" and active_link == "ytd" %} class="active" {% endif %}>
             <a href="{% url 'rain_ytd' %}">Year To Date</a></li>
         </ul>

@@ -337,8 +337,14 @@ def rain_data(request, days=None):
             active_link = '24'
         elif days <= 7:
             active_link = 'week'
-        elif days > 7:
-            active_link = 'year'
+        elif days == 30:
+            active_link = '30d'
+        elif days == 60:
+            active_link = '60d'
+        elif days == 90:
+            active_link = '90d'
+        else:
+            active_link = None
     else:
         active_link = "season"
         start = cumulative.get_season_start()
