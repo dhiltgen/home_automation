@@ -190,7 +190,7 @@ class TempHumiditySummary(TempHumidityView):
     GROUP = None
     PREDICTIONS = None
 
-    def get(self, request, days):
+    def get(self, request, days=None):
         (temp_sensor, humidity_sensor) = self.get_sensors()
         results = self.prime_results(request, humidity_sensor, temp_sensor)
         start = self.get_start(results, days)
