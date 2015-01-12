@@ -47,6 +47,7 @@ TODO
 # Create the user
 
     sudo -u postgres createuser -D -A -P automation
+    sudo -u postgres  psql -c "ALTER USER automation CREATEDB;"
     sudo -u postgres createdb -O automation home_automation
 
 # Poke around in the raw DB:
@@ -54,7 +55,7 @@ TODO
     psql -h localhost -W home_automation automation
     \dt
 
-# Occasionally:
+# Run Tests
 
-    python manage.py collectstatic
+    python manage.py test
 

@@ -1,3 +1,5 @@
+# Copyright (c) 2013-2015 Daniel Hiltgen
+
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
@@ -6,6 +8,10 @@ from django.utils.timezone import utc
 from sensor_data.models import Sensor, Reading, Prediction
 from datetime import datetime, timedelta
 from sensor_data import cumulative
+import logging
+
+
+log = logging.getLogger(__name__)
 
 
 # TODO
@@ -122,7 +128,11 @@ def generic_current(request, template, humidity_sensor, temp_sensor, group):
     results['group'] = group
     results['active_link'] = 'current'
 
-    results['prediction'] = Prediction.objects.latest('ts')
+    try:
+        results['prediction'] = Prediction.objects.latest('ts')
+    except Exception as e:
+        log.exception("No predictions available: %e", e)
+        results['prediction'] = None
 
     # TODO:
     # Prediction confidence (+/- based on accuracy over the last week)

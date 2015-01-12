@@ -1,11 +1,15 @@
-# Create your views here.
+# Copyright (c) 2013-2015 Daniel Hiltgen
+
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
-#from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from sprinklers.models import Circuit
 from sensor_data.models import Sensor, Reading, Prediction
 import sensor_data.cumulative as cumulative
+import logging
+
+
+log = logging.getLogger(__name__)
 
 
 #def index(request):
@@ -57,8 +61,12 @@ def summary(request):
             sensors.append(dict(
                 metadata=sensor, reading=Reading.objects.filter(
                     sensor_id=sensor.id).latest('ts')))
-    prediction = Prediction.objects.latest('ts')
+    try:
+        prediction = Prediction.objects.latest('ts')
+        results['prediction'] = prediction
+    except Exception as e:
+        log.exception("No predictions available: %e", e)
+        results['prediction'] = None
 
     results['sensors'] = sensors
-    results['prediction'] = prediction
     return render_to_response('overview.html', results)
