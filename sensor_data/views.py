@@ -1,295 +1,332 @@
 # Copyright (c) 2013-2015 Daniel Hiltgen
 
-from django.http import HttpResponse, Http404, HttpResponseRedirect
-from django.shortcuts import render_to_response, get_object_or_404
-from django.template import RequestContext
-from django.core.urlresolvers import reverse
-from django.utils.timezone import utc
-from sensor_data.models import Sensor, Reading, Prediction
 from datetime import datetime, timedelta
+from django.shortcuts import render_to_response
+from django.utils.timezone import utc
+from django.views.generic import View
 from sensor_data import cumulative
+from sensor_data.models import Sensor, Reading, Prediction
 import logging
 
 
 log = logging.getLogger(__name__)
 
 
-# TODO
-#  A bunch of this should be generalized with some common
-#  view classes
+class CommonView(View):
+    # Override for specific sensors
+    TEMPLATE = None
+    GROUP = None
+
+    def common_prime_results(self, request, sensor):
+        results = dict()
+        current_reading = Reading.objects.filter(
+            sensor_id=sensor.id).latest('ts')
+        results['latest_datetime'] = current_reading.ts
+        day = timedelta(days=1)
+        week = timedelta(weeks=1)
+        year = timedelta(weeks=52)
+
+        results['day_ago_datetime'] = current_reading.ts - day
+        results['two_days_ago_datetime'] = current_reading.ts - day - day
+        results['week_ago_datetime'] = current_reading.ts - week
+        results['year_ago_datetime'] = current_reading.ts - year
+        results['year_start_datetime'] = datetime(
+            year=current_reading.ts.year, month=1, day=1,
+            tzinfo=current_reading.ts.tzinfo)
+        return results
 
 
-def get_start_of_year():
-    now = datetime.utcnow().replace(tzinfo=utc)
-    now_year = now.year
-    return datetime(int(now_year), 1, 1).replace(tzinfo=utc)
+class TempHumidityView(CommonView):
+    # Override for specific sensors
+    TEMP_SENSOR_NAME = None
+    HUMIDITY_SENSOR_NAME = None
+    PREDICTIONS = None
 
-def get_humidty_and_temp_sensors(name):
-    humidity = Sensor.objects.filter(name=name + " Humidity")[0]
-    temp = Sensor.objects.filter(name=name + " Temperature")[0]
-    return (humidity, temp)
+    def get_sensors(self):
+        temp_sensor = Sensor.objects.filter(name=self.TEMP_SENSOR_NAME)[0]
+        humidity_sensor = Sensor.objects.filter(
+            name=self.HUMIDITY_SENSOR_NAME)[0]
+        return (temp_sensor, humidity_sensor)
 
-def common_prime_results(request, sensor):
-    results = dict()
-    current_reading = Reading.objects.filter(sensor_id=sensor.id).latest('ts')
-    results['latest_datetime'] = current_reading.ts
-    day = timedelta(days=1)
-    week = timedelta(weeks=1)
-    year = timedelta(weeks=52)
+    def prime_results(self, request, humidity_sensor, temp_sensor):
+        results = self.common_prime_results(request, temp_sensor)
+        results['temp_sensor'] = temp_sensor
+        results['humidity_sensor'] = humidity_sensor
+        current_temp = Reading.objects.filter(
+            sensor_id=temp_sensor.id).latest('ts')
+        results['current_humidity'] = \
+            Reading.objects.filter(sensor_id=humidity_sensor.id).latest('ts')
 
-    results['day_ago_datetime'] = current_reading.ts - day
-    results['two_days_ago_datetime'] = current_reading.ts - day - day
-    results['week_ago_datetime'] = current_reading.ts - week
-    results['year_ago_datetime'] = current_reading.ts - year
-    results['year_start_datetime'] = datetime(year=current_reading.ts.year,
-                                              month=1, day=1,
-                                              tzinfo=current_reading.ts.tzinfo)
-    return results
+        results['current_temp'] = current_temp
+        results['group'] = self.GROUP
+        return results
 
-
-def prime_results(request, humidity_sensor, temp_sensor):
-    results = common_prime_results(request, temp_sensor)
-    results['temp_sensor'] = temp_sensor
-    results['humidity_sensor'] = humidity_sensor
-    current_temp = Reading.objects.filter(sensor_id=temp_sensor.id).latest('ts')
-    results['current_humidity'] = \
-        Reading.objects.filter(sensor_id=humidity_sensor.id).latest('ts')
-
-    results['current_temp'] = current_temp
-    return results
-
-
-def prior_temp(offset, temp_sensor):
-    """
-    Find the temp readings for this time over the last few days
-
-    :param offset: The number of days ago to retrieve
-    :returns: The reading or None
-    """
-    try:
-        res = Reading.objects.raw(
-            "select * from sensor_data_reading where "
-            "ts >= (now() - interval '%d hours') and "
-            "ts <= (now() - interval '%d hours') and "
-            "sensor_id=%s order by ts desc limit 1"
-            % (offset*24+6, offset*24, temp_sensor.id))[0]
-        return res
-    except:
-        print 'No prior temp for', offset, temp_sensor.id
-        return None
+    def get_start(self, results, days):
+        if days:
+            days = int(days)
+            start = datetime.utcnow().replace(tzinfo=utc) - timedelta(days)
+            if days == 1:
+                active_link = '24'
+            elif days == 2:
+                active_link = '48'
+            elif days <= 7:
+                active_link = 'week'
+            elif days > 7:
+                active_link = 'year'
+        else:
+            now = datetime.utcnow().replace(tzinfo=utc)
+            now_year = now.year
+            start = datetime(int(now_year), 1, 1).replace(tzinfo=utc)
+            active_link = 'ytd'
+        results['active_link'] = active_link
+        return start
 
 
-def prior_prediction(offset):
-    try:
-        res = Prediction.objects.raw(
-            "select * from sensor_data_prediction where "
-            "ts <= (current_date - interval '%d days') and "
-            "ts >= (current_date - interval '%d days') "
-            "order by ts desc limit 1" %
-            (offset, (offset + 1)))[0]
-        print offset, res.__dict__
-        return res
-    except:
-        print 'No prior prediction for', offset
-        return None
+class TempHumidityCurrent(TempHumidityView):
+    def prior_temp(self, offset, temp_sensor):
+        """
+        Find the temp readings for this time over the last few days
+
+        :param offset: The number of days ago to retrieve
+        :returns: The reading or None
+        """
+        try:
+            res = Reading.objects.raw(
+                "select * from sensor_data_reading where "
+                "ts >= (now() - interval '%d hours') and "
+                "ts <= (now() - interval '%d hours') and "
+                "sensor_id=%s order by ts desc limit 1"
+                % (offset*24+6, offset*24, temp_sensor.id))[0]
+            return res
+        except:
+            print 'No prior temp for', offset, temp_sensor.id
+            return None
+
+    def prior_prediction(self, offset):
+        try:
+            res = Prediction.objects.raw(
+                "select * from sensor_data_prediction where "
+                "ts <= (current_date - interval '%d days') and "
+                "ts >= (current_date - interval '%d days') "
+                "order by ts desc limit 1" %
+                (offset, (offset + 1)))[0]
+            print offset, res.__dict__
+            return res
+        except:
+            print 'No prior prediction for', offset
+            return None
+
+    def prior_min_max(self, offset, sensor):
+        try:
+            reading = Reading.objects.raw(
+                "select min(id) as id, date_trunc('day', ts) as day, "
+                "min(value) as minimum, max(value) as maximum "
+                "from sensor_data_reading "
+                "where sensor_id=%d and "
+                "ts <=  (current_date - interval '%d days') and "
+                "ts >= (current_date - interval '%d days') "
+                "group by date_trunc('day', ts) "
+                "order by date_trunc('day', ts) desc;" %
+                (sensor.id, offset, (offset + 1)))[0]
+            return (reading.minimum, reading.maximum)
+        except Exception as e:
+            print 'Failed to lookup prior min/max', e
+            return ("NA", "NA")
+
+    def get(self, request):
+        (temp_sensor, humidity_sensor) = self.get_sensors()
+        results = self.prime_results(request, humidity_sensor, temp_sensor)
+        results['active_link'] = 'current'
+
+        try:
+            results['prediction'] = Prediction.objects.latest('ts')
+        except Exception as e:
+            log.exception("No predictions available: %e", e)
+            results['prediction'] = None
+
+        # TODO:
+        # Prediction confidence (+/- based on accuracy over the interval)
+
+        # TODO - Add humidity
+        past = []
+        for i in range(0, 4):
+            past_day = dict()
+            if i == 0:
+                past_day['label'] = "Today"
+            elif i == 1:
+                past_day['label'] = "Yesterday"
+            else:
+                # TODO - label for other days
+                past_day['label'] = str(-i)
+            try:
+                past_day['at_this_time'] = self.prior_temp(
+                    i, temp_sensor).value
+            except:
+                past_day['at_this_time'] = 'NA'
+
+            if self.PREDICTIONS:
+                prediction = self.prior_prediction(i)
+            else:
+                prediction = None
+            if prediction:
+                past_day['min_prediction'] = prediction.min1
+                past_day['max_prediction'] = prediction.max1
+            else:
+                past_day['min_prediction'] = 'NA'
+                past_day['max_prediction'] = 'NA'
+            (past_day['min_actual'], past_day['max_actual']) = \
+                self.prior_min_max(i, temp_sensor)
+            past.append(past_day)
+        results['past'] = past
+
+        return render_to_response(self.TEMPLATE, results)
 
 
-def prior_min_max(offset, sensor):
-    try:
-        reading = Reading.objects.raw(
-            "select min(id) as id, date_trunc('day', ts) as day, min(value) as minimum, max(value) as maximum "
+class TempHumiditySummary(TempHumidityView):
+    # Override for specific sensors
+    TEMPLATE = None
+    TEMP_SENSOR_NAME = None
+    HUMIDITY_SENSOR_NAME = None
+    GROUP = None
+    PREDICTIONS = None
+
+    def get(self, request, days):
+        (temp_sensor, humidity_sensor) = self.get_sensors()
+        results = self.prime_results(request, humidity_sensor, temp_sensor)
+        start = self.get_start(results, days)
+
+        # TODO
+        #  May want to refactor this so min/max are distinct sensors so the
+        #  timestamps are more accurate
+
+        raw_temps = [x for x in Reading.objects.raw(
+            "select min(id) as id, date_trunc('day', ts) as day, "
+            "min(value) as minimum, max(value) as maximum "
             "from sensor_data_reading "
             "where sensor_id=%d and "
-            "ts <=  (current_date - interval '%d days') and "
-            "ts >= (current_date - interval '%d days') "
+            "ts >= to_timestamp('%s', 'YYYY-MM-DD') "
             "group by date_trunc('day', ts) "
             "order by date_trunc('day', ts) desc;" %
-            (sensor.id, offset, (offset + 1)))[0]
-        return (reading.minimum, reading.maximum)
-    except Exception as e:
-        print 'Failed to lookup prior min/max', e
-        return ("NA", "NA")
+            (temp_sensor.id, start.strftime('%Y-%m-%d')))]
+        raw_humidities = [x for x in Reading.objects.raw(
+            "select min(id) as id, date_trunc('day', ts) as day, "
+            "min(value) as minimum, max(value) as maximum "
+            "from sensor_data_reading "
+            "where sensor_id=%d and "
+            "ts >= to_timestamp('%s', 'YYYY-MM-DD') "
+            "group by date_trunc('day', ts) "
+            "order by date_trunc('day', ts) desc;" %
+            (humidity_sensor.id, start.strftime('%Y-%m-%d %H:%M:%S')))]
+        # XXX this is a little fragile as it assumes there's always matching
+        #     entries between temp and humidity readings
+        readings = []
+        while len(raw_temps) > 0:
+            reading = raw_temps.pop()
+            try:
+                humidity = raw_humidities.pop()
+            except:
+                # Recycle prior reading
+                pass
+            reading.humidity_minimum = humidity.minimum
+            reading.humidity_maximum = humidity.maximum
+            if readings and readings[-1].day == reading.day:
+                # The query above may yield duplicates if more than one
+                # readhing throughout the day matches the min/max,
+                # so discard them
+                continue
+            readings.append(reading)
+        results['readings'] = readings
+        return render_to_response(self.TEMPLATE, results)
 
 
-def outside_current(request):
-    (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Outside')
-    return generic_current(request, 'sensor_data/outside_current.html',
-                           humidity_sensor, temp_sensor, "outside")
+class TempHumidityDetail(TempHumidityView):
+    # Override for specific sensors
+    TEMPLATE = None
+    TEMP_SENSOR_NAME = None
+    HUMIDITY_SENSOR_NAME = None
+    GROUP = None
+    PREDICTIONS = None
+
+    def get(self, request, days):
+        (temp_sensor, humidity_sensor) = self.get_sensors()
+        results = self.prime_results(request, humidity_sensor, temp_sensor)
+        start = self.get_start(results, days)
+
+        raw_temps = [x for x in Reading.objects.filter(
+            sensor_id=temp_sensor.id, ts__gt=start).order_by('-ts')]
+        raw_humidities = [x for x in Reading.objects.filter(
+                          sensor_id=humidity_sensor.id,
+                          ts__gt=start).order_by('-ts')]
+
+        # XXX this is a little fragile as it assumes there's always matching
+        #     entries between temp and humidity readings
+        readings = []
+        while len(raw_temps) > 0:
+            reading = raw_temps.pop()
+            try:
+                humidity = raw_humidities.pop()
+            except:
+                # Recycle prior reading
+                pass
+            reading.humidity = humidity.value
+            readings.append(reading)
+        results['readings'] = readings
+        return render_to_response(self.TEMPLATE, results)
 
 
-def cellar_current(request):
-    (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Cellar')
-    return generic_current(request, 'sensor_data/cellar_current.html',
-                           humidity_sensor, temp_sensor, "cellar")
+# TODO - drive these from configuration instead of hard-coding
+#        so additional sensors can be added "on the fly" via conf
+class OutsideCurrent(TempHumidityCurrent):
+    TEMPLATE = 'sensor_data/outside_current.html'
+    TEMP_SENSOR_NAME = 'Outside Temperature'
+    HUMIDITY_SENSOR_NAME = 'Outside Humidity'
+    GROUP = 'outside'
+    PREDICTIONS = True
 
 
-def generic_current(request, template, humidity_sensor, temp_sensor, group):
-    results = prime_results(request, humidity_sensor, temp_sensor)
-    results['group'] = group
-    results['active_link'] = 'current'
-
-    try:
-        results['prediction'] = Prediction.objects.latest('ts')
-    except Exception as e:
-        log.exception("No predictions available: %e", e)
-        results['prediction'] = None
-
-    # TODO:
-    # Prediction confidence (+/- based on accuracy over the last week)
-
-    # TODO - Add humidity
-    past = []
-    for i in range(0, 4):
-        past_day = dict()
-        if i == 0:
-            past_day['label'] = "Today"
-        elif i == 1:
-            past_day['label'] = "Yesterday"
-        else:
-            # TODO - label for other days
-            past_day['label'] = str(-i)
-        try:
-            past_day['at_this_time'] = prior_temp(i, temp_sensor).value
-        except:
-            past_day['at_this_time'] = 'NA'
-        prediction = prior_prediction(i)
-        if prediction:
-            past_day['min_prediction'] = prediction.min1
-            past_day['max_prediction'] = prediction.max1
-        else:
-            past_day['min_prediction'] = 'NA'
-            past_day['max_prediction'] = 'NA'
-        (past_day['min_actual'], past_day['max_actual']) = prior_min_max(
-            i, temp_sensor)
-        past.append(past_day)
-    results['past'] = past
-
-    return render_to_response(template, results)
+class CellarCurrent(TempHumidityCurrent):
+    TEMPLATE = 'sensor_data/cellar_current.html'
+    TEMP_SENSOR_NAME = 'Cellar Temperature'
+    HUMIDITY_SENSOR_NAME = 'Cellar Humidity'
+    GROUP = 'cellar'
 
 
-def outside_summary(request, days=None):
-    (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Outside')
-    return generic_summary(request, 'sensor_data/outside_summary.html',
-                           humidity_sensor, temp_sensor, "outside", days)
+class OutsideSummary(TempHumiditySummary):
+    TEMPLATE = 'sensor_data/outside_summary.html'
+    TEMP_SENSOR_NAME = 'Outside Temperature'
+    HUMIDITY_SENSOR_NAME = 'Outside Humidity'
+    GROUP = 'outside'
+    PREDICTIONS = True
 
 
-def cellar_summary(request, days=None):
-    (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Cellar')
-    return generic_summary(request, 'sensor_data/cellar_summary.html',
-                           humidity_sensor, temp_sensor, "cellar", days)
+class CellarSummary(TempHumiditySummary):
+    TEMPLATE = 'sensor_data/cellar_summary.html'
+    TEMP_SENSOR_NAME = 'Cellar Temperature'
+    HUMIDITY_SENSOR_NAME = 'Cellar Humidity'
+    GROUP = 'cellar'
 
 
-def generic_summary(request, template, humidity_sensor, temp_sensor, group, days):
-    results = prime_results(request, humidity_sensor, temp_sensor)
-    results['group'] = group
-    if days:
-        days = int(days)
-        start = datetime.utcnow().replace(tzinfo=utc) - timedelta(days)
-        if days == 1:
-            active_link = '24'
-        elif days == 2:
-            active_link = '48'
-        elif days <= 7:
-            active_link = 'week'
-        elif days > 7:
-            active_link = 'year'
-    else:
-        start = get_start_of_year()
-        active_link = 'ytd'
-
-    results['active_link'] = active_link
-
-    # TODO
-    #  May want to refactor this so min/max are distinct sensors so the
-    #  timestamps are more accurate
-
-    raw_temps = [x for x in Reading.objects.raw(
-        "select min(id) as id, date_trunc('day', ts) as day, min(value) as minimum, max(value) as maximum "
-        "from sensor_data_reading "
-        "where sensor_id=%d and "
-        "ts >= to_timestamp('%s', 'YYYY-MM-DD') "
-        "group by date_trunc('day', ts) "
-        "order by date_trunc('day', ts) desc;" %
-        (temp_sensor.id, start.strftime('%Y-%m-%d')))]
-    raw_humidities = [x for x in Reading.objects.raw(
-        "select min(id) as id, date_trunc('day', ts) as day, min(value) as minimum, max(value) as maximum "
-        "from sensor_data_reading "
-        "where sensor_id=%d and "
-        "ts >= to_timestamp('%s', 'YYYY-MM-DD') "
-        "group by date_trunc('day', ts) "
-        "order by date_trunc('day', ts) desc;" %
-        (humidity_sensor.id, start.strftime('%Y-%m-%d %H:%M:%S')))]
-    # XXX this is a little fragile as it assumes there's always matching
-    #     entries between temp and humidity readings
-    readings = []
-    while len(raw_temps) > 0:
-        reading = raw_temps.pop()
-        try:
-            humidity = raw_humidities.pop()
-        except:
-            # Recycle prior reading
-            pass
-        reading.humidity_minimum = humidity.minimum
-        reading.humidity_maximum = humidity.maximum
-        if readings and readings[-1].day == reading.day:
-            # The query above may yield duplicates if more than one
-            # readhing throughout the day matches the min/max, so discard them
-            continue
-        readings.append(reading)
-    results['readings'] = readings
-    return render_to_response(template, results)
+class OutsideDetail(TempHumidityDetail):
+    TEMPLATE = 'sensor_data/outside_detail.html'
+    TEMP_SENSOR_NAME = 'Outside Temperature'
+    HUMIDITY_SENSOR_NAME = 'Outside Humidity'
+    GROUP = 'outside'
+    PREDICTIONS = True
 
 
-def outside_detail(request, days):
-    (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Outside')
-    return generic_detail(request, 'sensor_data/outside_detail.html',
-                          humidity_sensor, temp_sensor, "outside", days)
+class CellarDetail(TempHumidityDetail):
+    TEMPLATE = 'sensor_data/cellar_detail.html'
+    TEMP_SENSOR_NAME = 'Cellar Temperature'
+    HUMIDITY_SENSOR_NAME = 'Cellar Humidity'
+    GROUP = 'cellar'
 
 
-def cellar_detail(request, days):
-    (humidity_sensor, temp_sensor) = get_humidty_and_temp_sensors('Cellar')
-    return generic_detail(request, 'sensor_data/cellar_detail.html',
-                          humidity_sensor, temp_sensor, "cellar", days)
-
-
-def generic_detail(request, template, humidity_sensor, temp_sensor, group, days):
-    results = prime_results(request, humidity_sensor, temp_sensor)
-    results['group'] = group
-    days = int(days)
-    start = datetime.utcnow().replace(tzinfo=utc) - timedelta(days)
-    if days == 1:
-        active_link = '24'
-    elif days == 2:
-        active_link = '48'
-    elif days <= 7:
-        active_link = 'week'
-    elif days > 7:
-        active_link = 'year'
-    results['active_link'] = active_link
-    raw_temps = [x for x in Reading.objects.filter(
-        sensor_id=temp_sensor.id, ts__gt=start).order_by('-ts')]
-    raw_humidities = [x for x in Reading.objects.filter(
-                      sensor_id=humidity_sensor.id,
-                      ts__gt=start).order_by('-ts')]
-
-    # XXX this is a little fragile as it assumes there's always matching
-    #     entries between temp and humidity readings
-    readings = []
-    while len(raw_temps) > 0:
-        reading = raw_temps.pop()
-        try:
-            humidity = raw_humidities.pop()
-        except:
-            # Recycle prior reading
-            pass
-        reading.humidity = humidity.value
-        readings.append(reading)
-    results['readings'] = readings
-    return render_to_response(template, results)
-
-
+# TODO - Convert rain into a view
 def rain_ytd(request):
-    return rain_common(request, get_start_of_year(), "ytd")
+    now = datetime.utcnow().replace(tzinfo=utc)
+    now_year = now.year
+    start_of_year = datetime(int(now_year), 1, 1).replace(tzinfo=utc)
+    return rain_common(request, start_of_year, "ytd")
 
 
 def rain_data(request, days=None):
@@ -311,16 +348,23 @@ def rain_data(request, days=None):
 
 def rain_common(request, start, active_link):
     sensor = Sensor.objects.filter(name='Rainfall')[0]
-    results = common_prime_results(request, sensor)
+    results = dict()
+    current_reading = Reading.objects.filter(sensor_id=sensor.id).latest('ts')
+    results['latest_datetime'] = current_reading.ts
+    day = timedelta(days=1)
+    week = timedelta(weeks=1)
+    year = timedelta(weeks=52)
+
+    results['day_ago_datetime'] = current_reading.ts - day
+    results['two_days_ago_datetime'] = current_reading.ts - day - day
+    results['week_ago_datetime'] = current_reading.ts - week
+    results['year_ago_datetime'] = current_reading.ts - year
+    results['year_start_datetime'] = datetime(year=current_reading.ts.year,
+                                              month=1, day=1,
+                                              tzinfo=current_reading.ts.tzinfo)
     results['group'] = "rain"
 
     results['active_link'] = active_link
-    """
-    select distinct on (value) id, value, ts
-    from sensor_data_reading
-    where sensor_id=6 and ts >= to_timestamp('2014-11-20', 'YYYY-MM-DD')
-    order by value, ts asc;
-    """
     raw_data = cumulative.get_readings(sensor, start, None, 0.01)
     total = cumulative.get_range(raw_data)
     results['total'] = total

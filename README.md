@@ -12,11 +12,10 @@ the watering cycles.
 TODO
 ====
 
-* Convert to using class based views
- * https://docs.djangoproject.com/en/1.7/topics/class-based-views/intro/
-* Unit tests
+* More unit test coverage
 * More sprinkler smarts
-* Consolidate old historical readings to high/low for each day
+* Consolidate old historical readings to high/low for each day to
+  improve performance on low-power systems like RasberryPIs
 
 
 # Wipe old data
