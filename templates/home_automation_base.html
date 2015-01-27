@@ -46,7 +46,7 @@
         <li {% if group == "outside" and active_link == "week" %} class="active" {% endif %}>
             <a href="{% url 'outside_detail' 7 %}">Last Week</a></li>
         <li {% if group == "outside" and active_link == "year" %} class="active" {% endif %}>
-            <a href="{% url 'outside_summary' 365 %}">Last Year</a></li>
+            <a href="{% url 'outside_summary' 30 %}">Last 30 Days</a></li>
         <li {% if group == "outside" and active_link == "ytd" %} class="active" {% endif %}>
             <a href="{% url 'outside_ytd' %}">Year to date</a></li>
     </ul></li>
@@ -62,7 +62,7 @@
         <li {% if group == "cellar" and active_link == "week" %} class="active" {% endif %}>
             <a href="{% url 'cellar_detail' 7 %}">Last Week</a></li>
         <li {% if group == "cellar" and active_link == "year" %} class="active" {% endif %}>
-            <a href="{% url 'cellar_summary' 365 %}">Last Year</a></li>
+            <a href="{% url 'cellar_summary' 30 %}">Last 30 days</a></li>
         <li {% if group == "cellar" and active_link == "ytd" %} class="active" {% endif %}>
             <a href="{% url 'cellar_ytd' %}">Year to date</a></li>
     </ul></li>

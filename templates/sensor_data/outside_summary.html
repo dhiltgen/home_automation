@@ -5,10 +5,10 @@
       function drawVisualization() {
         // Create and populate the data table.
         var data = google.visualization.arrayToDataTable([
-          ['x',  'Lows', 'Highs'],
+          ['x',  'Lows', 'Highs', 'Predicted Lows', 'Predicted Highs'],
 
     {% for reading in readings %}
-        ["{{ reading.day|date:'SHORT_DATE_FORMAT'}}", {{ reading.minimum }}, {{ reading.maximum }}],
+        ["{{ reading.day|date:'SHORT_DATE_FORMAT'}}", {{ reading.minimum }}, {{ reading.maximum }}, {{ reading.predicted_minimum }}, {{ reading.predicted_maximum }}],
     {% endfor %}
         ]);
 

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from django.shortcuts import render_to_response
 from django.utils.timezone import utc
 from django.views.generic import View
-from sensor_data import cumulative
+from sensor_data import cumulative, statistics
 from sensor_data.models import Sensor, Reading, Prediction
 import logging
 
@@ -16,6 +16,15 @@ class CommonView(View):
     # Override for specific sensors
     TEMPLATE = None
     GROUP = None
+    SMOOTHING = 0.2
+
+    def smooth(self, data):
+        """
+        Given a series of sensor data, use exponential smoothing
+        """
+        for i in range(1, len(data)):
+            data[i].value = self.SMOOTHING * float(data[i].value) + \
+                (1 - self.SMOOTHING) * float(data[i-1].value)
 
     def common_prime_results(self, request, sensor):
         results = dict()
@@ -81,6 +90,20 @@ class TempHumidityView(CommonView):
         results['active_link'] = active_link
         return start
 
+    def get_prediction(self, when):
+        try:
+            res = Prediction.objects.raw(
+                "select * from sensor_data_prediction "
+                "where ts < '%s' "
+                "order by ts desc "
+                "limit 1" %
+                (when))[0]
+            #print when, res.__dict__
+            return res
+        except Exception as e:
+            print 'No prior prediction for', when, e
+            return None
+
 
 class TempHumidityCurrent(TempHumidityView):
     def prior_temp(self, offset, temp_sensor):
@@ -110,7 +133,7 @@ class TempHumidityCurrent(TempHumidityView):
                 "ts >= (current_date - interval '%d days') "
                 "order by ts desc limit 1" %
                 (offset, (offset + 1)))[0]
-            print offset, res.__dict__
+            #print offset, res.__dict__
             return res
         except:
             print 'No prior prediction for', offset
@@ -138,14 +161,52 @@ class TempHumidityCurrent(TempHumidityView):
         results = self.prime_results(request, humidity_sensor, temp_sensor)
         results['active_link'] = 'current'
 
-        try:
-            results['prediction'] = Prediction.objects.latest('ts')
-        except Exception as e:
-            log.exception("No predictions available: %e", e)
-            results['prediction'] = None
+        if self.PREDICTIONS:
+            try:
+                results['prediction'] = Prediction.objects.latest('ts')
 
-        # TODO:
-        # Prediction confidence (+/- based on accuracy over the interval)
+                # Prediction confidence (+/- based on accuracy over interval)
+                # we'll use a trailing 30 day sample to determine accuracy
+                pred_range = 30
+                results['stdev_interval'] = pred_range
+                interval = range(1, pred_range)
+                predictions = [self.prior_prediction(i) for i in interval]
+                min_maxs = [self.prior_min_max(i, temp_sensor)
+                            for i in interval]
+                min_deltas = [float(predictions[i].min1) - float(min_maxs[i][0])
+                              for i in range(len(predictions))
+                              if predictions[i] and min_maxs[i]]
+                max_deltas = [float(predictions[i].max1) - float(min_maxs[i][1])
+                              for i in range(len(predictions))
+                              if predictions[i] and min_maxs[i]]
+                min_delta_mean = statistics.mean(min_deltas)
+                max_delta_mean = statistics.mean(max_deltas)
+                min_stdev = statistics.pstdev(min_deltas)
+                max_stdev = statistics.pstdev(max_deltas)
+                results['min_prediction_stdev'] = min_stdev
+                results['max_prediction_stdev'] = max_stdev
+
+                # Update the prediction with ranges
+                pred = results['prediction']
+                for i in range(1,8):
+                    if 'min%d' % (i) in pred.__dict__:
+                        pred.__dict__["min%d_low" % (i)] = \
+                            (float(pred.__dict__["min%d" % (i)]) -
+                             min_delta_mean - min_stdev)
+                        pred.__dict__["min%d_high" % (i)] = \
+                            (float(pred.__dict__["min%d" % (i)]) -
+                             min_delta_mean + min_stdev)
+                    if 'max%d' % (i) in pred.__dict__:
+                        pred.__dict__["max%d_low" % (i)] = \
+                            (float(pred.__dict__["max%d" % (i)]) -
+                             max_delta_mean - max_stdev)
+                        pred.__dict__["max%d_high" % (i)] = \
+                            (float(pred.__dict__["max%d" % (i)]) -
+                             max_delta_mean + max_stdev)
+            except Exception as e:
+                log.exception("No predictions available: %e", e)
+                results['prediction'] = None
+
 
         # TODO - Add humidity
         past = []
@@ -227,6 +288,12 @@ class TempHumiditySummary(TempHumidityView):
             except:
                 # Recycle prior reading
                 pass
+            if self.PREDICTIONS:
+                prediction = self.get_prediction(reading.ts)
+                # TODO - validate the timestamp is right (~1 day before)
+                if prediction:
+                    reading.predicted_minimum = prediction.min1
+                    reading.predicted_maximum = prediction.max1
             reading.humidity_minimum = humidity.minimum
             reading.humidity_maximum = humidity.maximum
             if readings and readings[-1].day == reading.day:
@@ -235,6 +302,7 @@ class TempHumiditySummary(TempHumidityView):
                 # so discard them
                 continue
             readings.append(reading)
+
         results['readings'] = readings
         return render_to_response(self.TEMPLATE, results)
 
@@ -258,6 +326,8 @@ class TempHumidityDetail(TempHumidityView):
                           sensor_id=humidity_sensor.id,
                           ts__gt=start).order_by('-ts')]
 
+        self.smooth(raw_temps)
+        self.smooth(raw_humidities)
         # XXX this is a little fragile as it assumes there's always matching
         #     entries between temp and humidity readings
         readings = []

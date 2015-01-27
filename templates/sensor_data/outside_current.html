@@ -62,40 +62,41 @@
     </thead>
     <tr>
         <td>Today</td>
-        <td> {{ prediction.min1|stringformat:".1f" }} </td>
-        <td> {{ prediction.max1|stringformat:".1f" }} </td>
+        <td> {{ prediction.min1_low|stringformat:".1f" }} - {{ prediction.min1_high|stringformat:".1f" }}  </td>
+        <td> {{ prediction.max1_low|stringformat:".1f" }} - {{ prediction.max1_high|stringformat:".1f" }} </td>
     </tr>
     <tr>
         <td>Tomorrow</td>
-        <td> {{ prediction.min2|stringformat:".1f" }} </td>
-        <td> {{ prediction.max2|stringformat:".1f" }} </td>
+        <td> {{ prediction.min2_low|stringformat:".1f" }} - {{ prediction.min2_high|stringformat:".1f" }} </td>
+        <td> {{ prediction.max2_low|stringformat:".1f" }} - {{ prediction.max2_high|stringformat:".1f" }} </td>
     </tr>
     <tr>
         <td>+2</td>
-        <td> {{ prediction.min3|stringformat:".1f" }} </td>
-        <td> {{ prediction.max3|stringformat:".1f" }} </td>
+        <td> {{ prediction.min3_low|stringformat:".1f" }} - {{ prediction.min3_high|stringformat:".1f" }} </td>
+        <td> {{ prediction.max3_low|stringformat:".1f" }} - {{ prediction.max3_high|stringformat:".1f" }} </td>
     </tr>
     <tr>
         <td>+3</td>
-        <td> {{ prediction.min4|stringformat:".1f" }} </td>
-        <td> {{ prediction.max4|stringformat:".1f" }} </td>
+        <td> {{ prediction.min4_low|stringformat:".1f" }} - {{ prediction.min4_high|stringformat:".1f" }} </td>
+        <td> {{ prediction.max4_low|stringformat:".1f" }} - {{ prediction.max4_high|stringformat:".1f" }} </td>
     </tr>
     <tr>
         <td>+4</td>
-        <td> {{ prediction.min5|stringformat:".1f" }} </td>
-        <td> {{ prediction.max5|stringformat:".1f" }} </td>
+        <td> {{ prediction.min5_low|stringformat:".1f" }} - {{ prediction.min5_high|stringformat:".1f" }} </td>
+        <td> {{ prediction.max5_low|stringformat:".1f" }} - {{ prediction.max5_high|stringformat:".1f" }} </td>
     </tr>
     <tr>
         <td>+5</td>
-        <td> {{ prediction.min6|stringformat:".1f" }} </td>
-        <td> {{ prediction.max6|stringformat:".1f" }} </td>
+        <td> {{ prediction.min6_low|stringformat:".1f" }} - {{ prediction.min6_high|stringformat:".1f" }} </td>
+        <td> {{ prediction.max6_low|stringformat:".1f" }} - {{ prediction.max6_high|stringformat:".1f" }} </td>
     </tr>
     <tr>
         <td>+6</td>
-        <td> {{ prediction.min7|stringformat:".1f" }} </td>
-        <td> {{ prediction.max7|stringformat:".1f" }} </td>
+        <td> {{ prediction.min7_low|stringformat:".1f" }} - {{ prediction.min7_high|stringformat:".1f" }} </td>
+        <td> {{ prediction.max7_low|stringformat:".1f" }} - {{ prediction.max7_high|stringformat:".1f" }} </td>
     </tr>
     </table>
+    Estimated to within 1 std dev. using past {{ stdev_interval }} days accuracy
     </div>
     </div>
 

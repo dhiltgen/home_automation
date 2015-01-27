@@ -58,5 +58,6 @@ TODO
 
 # Run Tests
 
-    python manage.py test
+    python-coverage run --source='.' manage.py test
+    python-coverage report -m
 
