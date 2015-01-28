@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
 from sensor_data.models import Sensor, Reading
+import sprinklers.models
 from django.utils.timezone import utc
 
 
@@ -44,6 +45,11 @@ def main():
 
     log.debug('Known sensors: %r', [s.name for s in Sensor.objects.all()])
 
+    # Poke the sprinklers in case we need to cycle any
+    log.debug('Running sprinkler poll cycle')
+    sprinklers.models.poll()
+
+    count = 0
     for filename in glob.glob(args.queue + '/*'):
         m = re.search(r'(\d+)\.(.+)', filename)
         assert m, "Filename %r didn't match expected pattern" % (filename)
@@ -67,6 +73,11 @@ def main():
             r = Reading(sensor=s, ts=dt, value=val)
             r.save()
             os.unlink(filename)
+        count += 1
+        if count > 500:
+            log.info("Processed 500 items from the queue, but more remain. "
+                     "Run again to continue processing.")
+            break
 
 
 if __name__ == "__main__":

@@ -9,24 +9,26 @@
 <table class="table table-striped table-condensed">
 <caption>Current Circuit Status</caption>
 <tr>
-    <th>Last Watering</th>
-    <th>Last Duration</th>
+    <th>Last Watered</th>
     <th>Current State</th>
     <th>Disabled</th>
-    <th>Next scheduled run</th>
-    <th>Water usage</th>
+    <th>Goal</th>
+    <th>Percent of Goal</th>
+    <th>Watering Rate</th>
+    <th>Min. Spacing</th>
 </tr>
 <tr>
     <td>{{ circuit.last_watered }}</td>
-    <td>{{ circuit.last_duration }}</td>
     <td>
         {% if circuit.current_state %} WATERING {% else %} OFF {% endif %}
     </td>
     <td>
         {% if circuit.disabled %} DISABLED {% else %} ENABLED {% endif %}
     </td>
-    <td>{{ circuit.next_scheduled_run }}</td>
-    <td>{{ circuit.cfh }} CFH</td>
+    <td>{{ circuit.target_wk }} {{ circuit.volume_label }}/week</td>
+    <td>{% widthratio circuit.percent_of_target 1 100 %}% </td>
+    <td>{{ circuit.rate_hr }} {{ circuit.volume_label }}/hour</td>
+    <td>{{ circuit.spacing_hr }} hours</td>
 </tr>
 </table>
 <p/>
@@ -40,9 +42,26 @@
     <input type="submit" value="Stop" />
 {% else %}
     <input type="hidden" name="action" value="start"/>
-    Desired Duration: <input type="text" name="duration"> (Leave blank to manually stop later)<br>
 <input type="submit" value="Start Circuit" />
 {% endif %}
 </form>
+
+<p/>
+<hr>
+<p/>
+
+<table class="table table-striped table-condensed">
+<caption>Recent Watering History</caption>
+<tr>
+    <th>When</th>
+    <th>How Much</th>
+</tr>
+    {% for event in events %}
+<tr>
+    <td>{{ event.time }}</td>
+    <td>{{ event.volume|stringformat:".3f"}} {{circuit.volume_label}}</td>
+</tr>
+    {% endfor %}
+</table>
 
 {% endblock %}

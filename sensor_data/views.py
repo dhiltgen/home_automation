@@ -98,7 +98,7 @@ class TempHumidityView(CommonView):
                 "order by ts desc "
                 "limit 1" %
                 (when))[0]
-            #print when, res.__dict__
+            # print when, res.__dict__
             return res
         except Exception as e:
             print 'No prior prediction for', when, e
@@ -133,7 +133,7 @@ class TempHumidityCurrent(TempHumidityView):
                 "ts >= (current_date - interval '%d days') "
                 "order by ts desc limit 1" %
                 (offset, (offset + 1)))[0]
-            #print offset, res.__dict__
+            # print offset, res.__dict__
             return res
         except:
             print 'No prior prediction for', offset
@@ -173,10 +173,12 @@ class TempHumidityCurrent(TempHumidityView):
                 predictions = [self.prior_prediction(i) for i in interval]
                 min_maxs = [self.prior_min_max(i, temp_sensor)
                             for i in interval]
-                min_deltas = [float(predictions[i].min1) - float(min_maxs[i][0])
+                min_deltas = [float(predictions[i].min1) -
+                              float(min_maxs[i][0])
                               for i in range(len(predictions))
                               if predictions[i] and min_maxs[i]]
-                max_deltas = [float(predictions[i].max1) - float(min_maxs[i][1])
+                max_deltas = [float(predictions[i].max1) -
+                              float(min_maxs[i][1])
                               for i in range(len(predictions))
                               if predictions[i] and min_maxs[i]]
                 min_delta_mean = statistics.mean(min_deltas)
@@ -188,7 +190,7 @@ class TempHumidityCurrent(TempHumidityView):
 
                 # Update the prediction with ranges
                 pred = results['prediction']
-                for i in range(1,8):
+                for i in range(1, 8):
                     if 'min%d' % (i) in pred.__dict__:
                         pred.__dict__["min%d_low" % (i)] = \
                             (float(pred.__dict__["min%d" % (i)]) -
@@ -206,7 +208,6 @@ class TempHumidityCurrent(TempHumidityView):
             except Exception as e:
                 log.exception("No predictions available: %e", e)
                 results['prediction'] = None
-
 
         # TODO - Add humidity
         past = []

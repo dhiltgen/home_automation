@@ -22,5 +22,5 @@ def pstdev(data):
     if n < 2:
         raise ValueError('variance requires at least two data points')
     ss = _ss(data)
-    pvar = ss/n # the population variance
+    pvar = ss/n  # the population variance
     return pvar**0.5

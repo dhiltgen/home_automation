@@ -6,28 +6,34 @@
 <caption>Current Circuit Status</caption>
 <tr>
     <th>Circuit</th>
-    <th>Last Watering</th>
-    <th>Last Duration</th>
+    <th>Last Watered</th>
     <th>Current State</th>
-    <th>Disabled</th>
-    <th>Next scheduled run</th>
-    <th>Water usage</th>
+    <th>Goal</th>
+    <th>% of Goal</th>
+    <th>Watering Rate</th>
+    <th>Min. Spacing</th>
 </tr>
 
 <!-- TODO - Figure out how to use CSS to make the cells prettier and the table overall look nicer -->
     {% for circuit in circuits %}
 <tr>
-    <td><a href="/circuits/{{ circuit.id }}/">{{ circuit.label }}</a></td>
+    <td>
+    {% if circuit.disabled %} <s> {% endif %}
+    <a href="/circuits/{{ circuit.id }}/">{{ circuit.label }}</a>
+    {% if circuit.disabled %} </s> {% endif %}
+    </td>
     <td>{{ circuit.last_watered }}</td>
-    <td>{{ circuit.last_duration }}</td>
     <td>
         {% if circuit.current_state %} WATERING {% else %} OFF {% endif %}
     </td>
     <td>
-        {% if circuit.disabled %} DISABLED {% else %} ENABLED {% endif %}
+    {% if circuit.disabled %} <s> {% endif %}
+    {{ circuit.target_wk }} {{ circuit.volume_label }}/week
+    {% if circuit.disabled %} </s> {% endif %}
     </td>
-    <td>{{ circuit.next_scheduled_run }}</td>
-    <td>{{ circuit.cfh }} CFH</td>
+    <td>{% widthratio circuit.percent_of_target 1 100 %}% </td>
+    <td>{{ circuit.rate_hr }} {{ circuit.volume_label }}/hour</td>
+    <td>{{ circuit.spacing_hr }} hours</td>
 </tr>
     {% endfor %}
 </table>

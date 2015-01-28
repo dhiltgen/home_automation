@@ -44,14 +44,18 @@
     <table class="table table-striped table-condensed">
     <tr>
         <th>Circuit</th>
-        <th>Enabled</th>
         <th>Status</th>
+        <th>Last Watered</th>
     </tr>
     {% for circuit in circuits %}
         <tr>
-            <td><a href="/circuits/{{ circuit.id }}/">{{ circuit.label }}</a></td>
-            <td>{% if circuit.disabled %} DISABLED {% else %} ENABLED {% endif %}</td>
+            <td>
+            {% if circuit.disabled %} <s> {% endif %}
+            <a href="/circuits/{{ circuit.id }}/">{{ circuit.label }}</a>
+            {% if circuit.disabled %} </s> {% endif %}
+            </td>
             <td>{% if circuit.current_state %} WATERING {% else %} OFF {% endif %}</td>
+            <td>{{ circuit.last_watered }}</td>
         </tr>
     {% endfor %}
     </table>

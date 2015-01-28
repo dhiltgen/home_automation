@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, include, url
-from django.views.generic import DetailView, ListView
+from django.views.generic import ListView
 from sprinklers.models import Circuit, detect_current_state
 from sensor_data.views import CellarCurrent, OutsideCurrent, CellarSummary, \
     OutsideSummary, CellarDetail, OutsideDetail
@@ -22,11 +22,8 @@ urlpatterns = patterns(
             context_object_name='circuits',  # Default would be poll_list
             template_name='sprinklers/index.html'),
         name='circuits'),
-    url(r'^circuits/(?P<pk>\d+)/$',
-        DetailView.as_view(
-            model=Circuit,
-            template_name='sprinklers/detail.html'),
-        name='circuit_details'),
+    url(r'^circuits/(?P<circuit_id>\d+)/$',
+        'sprinklers.views.detail', name='circuit_details'),
     url(r'^circuits/(?P<circuit_id>\d+)/update/$', 'sprinklers.views.update'),
 
     url(r'^outside$', OutsideCurrent.as_view(), name='outside_current'),

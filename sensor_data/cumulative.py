@@ -51,9 +51,13 @@ def get_readings(sensor, t1, t2=None, multiplier=1.0):
             "order by value, ts asc; " %
             (sensor.id,
              t1.strftime('%Y-%m-%d')))]
+        if not raw_data:
+            return []
         # Append the very latest reading for completeness in the graph.
         last = Reading.objects.filter(
             sensor_id=sensor.id).order_by('-ts')[:1]
+        if not last:
+            return []
         raw_data.append(last[0])
     else:
         raw_data = [x for x in Reading.objects.raw(
@@ -66,6 +70,8 @@ def get_readings(sensor, t1, t2=None, multiplier=1.0):
             (sensor.id,
              t1.strftime('%Y-%m-%d'),
              t2.strftime('%Y-%m-%d')))]
+        if not raw_data:
+            return []
 
     normalize(raw_data, multiplier)
     return raw_data

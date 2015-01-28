@@ -1,6 +1,6 @@
-from sprinklers.models import Circuit, Schedule
+from sprinklers.models import Circuit, WateringTime
 from django.contrib import admin
 
 
 admin.site.register(Circuit)
-admin.site.register(Schedule)
+admin.site.register(WateringTime)

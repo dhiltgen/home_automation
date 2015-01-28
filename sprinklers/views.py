@@ -3,7 +3,8 @@
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.core.urlresolvers import reverse
-from sprinklers.models import Circuit
+from django.template import RequestContext
+from sprinklers.models import Circuit, WateringEvent, circuits_by_percentage
 from sensor_data.models import Sensor, Reading, Prediction
 import sensor_data.cumulative as cumulative
 import logging
@@ -14,9 +15,8 @@ log = logging.getLogger(__name__)
 
 def update(request, circuit_id):
     c = get_object_or_404(Circuit, pk=circuit_id)
-    print 'XXX POST details:', request.POST
     if request.POST['action'] == 'start':
-        c.start_watering(request.POST['duration'])
+        c.start_watering()
     elif request.POST['action'] == 'stop':
         c.stop_watering()
     else:
@@ -27,7 +27,7 @@ def update(request, circuit_id):
 
 def summary(request):
     results = dict()
-    results['circuits'] = Circuit.objects.all().order_by('label')
+    results['circuits'] = circuits_by_percentage()
     sensors = []
     for sensor in Sensor.objects.all().order_by('name'):
         if sensor.sensor_type == 'R':
@@ -54,8 +54,18 @@ def summary(request):
         prediction = Prediction.objects.latest('ts')
         results['prediction'] = prediction
     except Exception as e:
-        log.exception("No predictions available: %e", e)
+        log.exception("No predictions available: %r", e)
         results['prediction'] = None
 
     results['sensors'] = sensors
     return render_to_response('overview.html', results)
+
+
+def detail(request, circuit_id):
+    results = dict()
+    circuit = Circuit.objects.get(id=circuit_id)
+    results['circuit'] = circuit
+    results['events'] = WateringEvent.objects.filter(circuit=circuit).order_by(
+        '-time')[:10]  # Return at most 10 recent watering events
+    return render_to_response('sprinklers/detail.html', results,
+                              context_instance=RequestContext(request))
