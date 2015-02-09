@@ -47,10 +47,10 @@ def get_readings(sensor, t1, t2=None, multiplier=1.0):
             "select distinct on (value) id, value, ts "
             "from sensor_data_reading "
             "where sensor_id=%d and "
-            "ts >= to_timestamp('%s', 'YYYY-MM-DD') "
+            "ts >= to_timestamp('%s', 'YYYY-MM-DD HH24:MI:SS') "
             "order by value, ts asc; " %
             (sensor.id,
-             t1.strftime('%Y-%m-%d')))]
+             t1.strftime('%Y-%m-%d %H:%M:%S')))]
         if not raw_data:
             return []
         # Append the very latest reading for completeness in the graph.
@@ -64,12 +64,12 @@ def get_readings(sensor, t1, t2=None, multiplier=1.0):
             "select distinct on (value) id, value, ts "
             "from sensor_data_reading "
             "where sensor_id=%d and "
-            "ts >= to_timestamp('%s', 'YYYY-MM-DD') "
-            "and ts <= to_timestamp('%s', 'YYYY-MM-DD') "
+            "ts >= to_timestamp('%s', 'YYYY-MM-DD HH24:MI:SS') "
+            "and ts <= to_timestamp('%s', 'YYYY-MM-DD HH24:MI:SS') "
             "order by value, ts asc; " %
             (sensor.id,
-             t1.strftime('%Y-%m-%d'),
-             t2.strftime('%Y-%m-%d')))]
+             t1.strftime('%Y-%m-%d %H:%M:%S'),
+             t2.strftime('%Y-%m-%d %H:%M:%S')))]
         if not raw_data:
             return []
 
