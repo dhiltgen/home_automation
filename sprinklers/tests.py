@@ -232,9 +232,9 @@ class SprinklerViewTest(TestCase):
         sprinklers.circuit_backend.get_state = get_state
         try:
             poll()
-            print circuits
+            print(circuits)
             circuits = Circuit.objects.all().order_by("label")
-            print circuits
+            print(circuits)
             assert circuits[0].current_state, \
                 "Didn't leave sprinkler running"
             assert not circuits[1].current_state, \
@@ -245,7 +245,7 @@ class SprinklerViewTest(TestCase):
     @patch("sprinklers.models.backend.stop", new=lambda x: None)
     @patch("sprinklers.models.backend.start", new=lambda x: None)
     def test_poll_enough_time(self):
-        print 'XXX enough_time'
+        print('XXX enough_time')
         window = self.add_window_now()
         import sprinklers.circuit_backend
         circuits = Circuit.objects.all().order_by("label")
@@ -272,7 +272,7 @@ class SprinklerViewTest(TestCase):
                 "Didn't start other sprinkler"
         finally:
             sprinklers.circuit_backend.get_state = orig
-            print 'XXX enough_time done'
+            print('XXX enough_time done')
 
     def test_poll_recent_rain(self):
         window = self.add_window_now()

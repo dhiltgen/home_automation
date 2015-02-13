@@ -109,14 +109,14 @@ def poll():
     This routine uses the targets and trailing percentage to
     cyle through sprinklers.
     """
-    print 'XXX poll'
+    print('XXX poll')
     detect_current_state()
     circuits = circuits_by_percentage()
     now = datetime.datetime.utcnow().replace(tzinfo=utc)
 
     running = [c for c in circuits if c.current_state]
     if running:
-        print 'XXX running', running[0]
+        print('XXX running', running[0])
         circuit = running[0]
         log.debug("%r currently watering", circuit.label)
         # Should we keep running it, or stop it?
@@ -225,7 +225,7 @@ class Circuit(models.Model):
         self.save()
         event = WateringEvent.objects.filter(circuit=self).order_by(
             '-time')[0]
-        print 'Found event', event
+        print('Found event', event)
         if float(event.volume) < 0.0001:
             start = event.time
 
@@ -238,10 +238,10 @@ class Circuit(models.Model):
             # convert duration to hours for calculations
             duration = float(delta / 3600.0)
             event.volume = str(duration * float(self.rate_hr))
-            print 'Watering volume is', event.volume
+            print('Watering volume is', event.volume)
             event.save()
         else:
-            print 'bustage'
+            print('bustage')
             log.warning("Iconsistent watering event detected")
 
     def last_watered(self):

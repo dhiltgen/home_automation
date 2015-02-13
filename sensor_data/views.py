@@ -101,7 +101,7 @@ class TempHumidityView(CommonView):
             # print when, res.__dict__
             return res
         except Exception as e:
-            print 'No prior prediction for', when, e
+            print('No prior prediction for', when, e)
             return None
 
 
@@ -122,7 +122,7 @@ class TempHumidityCurrent(TempHumidityView):
                 % (offset*24+6, offset*24, temp_sensor.id))[0]
             return res
         except:
-            print 'No prior temp for', offset, temp_sensor.id
+            print('No prior temp for', offset, temp_sensor.id)
             return None
 
     def prior_prediction(self, offset):
@@ -136,7 +136,7 @@ class TempHumidityCurrent(TempHumidityView):
             # print offset, res.__dict__
             return res
         except:
-            print 'No prior prediction for', offset
+            print('No prior prediction for', offset)
             return None
 
     def prior_min_max(self, offset, sensor):
@@ -153,7 +153,7 @@ class TempHumidityCurrent(TempHumidityView):
                 (sensor.id, offset, (offset + 1)))[0]
             return (reading.minimum, reading.maximum)
         except Exception as e:
-            print 'Failed to lookup prior min/max', e
+            print('Failed to lookup prior min/max', e)
             return ("NA", "NA")
 
     def get(self, request):

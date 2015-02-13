@@ -1,0 +1,33 @@
+db:
+    image: postgres
+    volumes:
+    - ~/volumes/pg_data:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_PASSWORD
+
+app:
+    build: .
+    command: uwsgi --socket :8000 --chdir=/code --manage-script-name --mount=/automation=home_automation/wsgi.py
+    expose:
+     - "8000"
+    volumes:
+    - .:/code
+    links:
+    - db:database
+    environment:
+    - DJANGO_SECRET
+
+
+web:
+    image: nginx
+    links:
+    - app:app
+    volumes:
+    - .:/code:ro
+    - /home/daniel/hiltgen.com/www:/usr/share/nginx/html:ro
+    environment:
+    - SERVER_NAME=www.hiltgen.com
+    - SERVER_PORT=8080
+    command: sh -c 'sed -e "s|%%APP_PORT_8000_TCP_ADDR%%|${APP_PORT_8000_TCP_ADDR}|g" -e "s|%%SERVER_NAME%%|${SERVER_NAME}|g" -e "s|%%SERVER_PORT%%|${SERVER_PORT}|g" /code/nginx.conf > /etc/nginx/conf.d/default.conf && cat /etc/nginx/conf.d/default.conf && nginx -g "daemon off;"'
+    ports:
+     - "8080:8080"

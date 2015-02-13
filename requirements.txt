@@ -1,0 +1,4 @@
+Django
+pytz
+psycopg2
+uwsgi
