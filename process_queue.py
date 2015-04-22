@@ -11,6 +11,10 @@ import re
 log = logging.getLogger(__name__)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "home_automation.settings")
+
+import django
+django.setup()
+
 from sensor_data.models import Sensor, Reading
 import sprinklers.models
 from django.utils.timezone import utc

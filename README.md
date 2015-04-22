@@ -42,6 +42,20 @@ TODO
   so they can be driven by a remote instance of the app
 
 
+# setup
+
+    docker-compose build
+    docker-compose up
+
+
+# DB init
+    echo "create database home_automation;" | docker exec -i homeautomation_db_1 psql -U postgres
+    cat dump.sql | docker exec -i homeautomation_db_1 psql -U postgres home_automation
+
+# Plausible crontab entries:
+    */1 * * * * /usr/bin/docker exec homeautomation_app_1 python ./process_queue.py --queue ./queue
+    0 4 * * * /usr/bin/docker exec homeautomation_app_1 python ./predictions.py
+
 # Wipe old data
 
     python ./manage.py flush

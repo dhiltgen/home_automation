@@ -4,11 +4,14 @@
 from pytz import timezone
 import argparse
 import datetime
-import httplib
 import logging
 import os
 import xml.etree.ElementTree as ET
 
+try:
+    import httplib
+except:
+    import http.client as httplib
 
 log = logging.getLogger(__name__)
 
@@ -64,25 +67,24 @@ def main():
 
     ts = datetime.datetime.now().replace(tzinfo=my_timezone)
 
-    with transaction.commit_on_success():
-        r = Prediction(ts=ts,
-                       min1=mins[0],
-                       min2=mins[1],
-                       min3=mins[2],
-                       min4=mins[3],
-                       min5=mins[4],
-                       min6=mins[5],
-                       min7=mins[6],
-                       max1=maxs[0],
-                       max2=maxs[1],
-                       max3=maxs[2],
-                       max4=maxs[3],
-                       max5=maxs[4],
-                       max6=maxs[5],
-                       max7=maxs[6])
-        log.debug("Predictions: %s", r)
-        if not args.dry_run:
-            r.save()
+    r = Prediction(ts=ts,
+                   min1=mins[0],
+                   min2=mins[1],
+                   min3=mins[2],
+                   min4=mins[3],
+                   min5=mins[4],
+                   min6=mins[5],
+                   min7=mins[6],
+                   max1=maxs[0],
+                   max2=maxs[1],
+                   max3=maxs[2],
+                   max4=maxs[3],
+                   max5=maxs[4],
+                   max6=maxs[5],
+                   max7=maxs[6])
+    log.debug("Predictions: %s", r)
+    if not args.dry_run:
+        r.save()
 
 
 if __name__ == "__main__":
