@@ -66,6 +66,7 @@ TODO
 
     python ./manage.py dumpdata --indent 4 > dump.json
     python ./manage.py loaddata dump.json
+    pg_dump -h localhost -U automation -W home_automation > dump.sql
 
 # Create the user
 
